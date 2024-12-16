@@ -1,0 +1,20 @@
+{
+  "name": "recv",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.js",
+    "test": "REPORT_GAS=true npx hardhat test",
+    "coverage": "npx hardhat coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.17",
+    "typescript": "^5.7.2"
+  }
+}
