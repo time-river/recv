@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx hardhat compile",
-    "deploy": "npx hardhat run scripts/deploy.js",
+    "tron-dev": "npx hardhat run scripts/deploy-tron-dev.ts",
     "test": "REPORT_GAS=true npx hardhat test",
     "coverage": "npx hardhat coverage"
   },
@@ -15,6 +15,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "hardhat": "^2.22.17",
+    "tronweb": "^6.0.0",
     "typescript": "^5.7.2"
   }
 }
