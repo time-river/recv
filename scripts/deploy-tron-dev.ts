@@ -24,8 +24,13 @@ function main() {
     abi: artifacts.abi,
     bytecode: artifacts.bytecode
   }).then((contract) => {
-    console.log('contract', contract);
-    console.log(contract.address);
+    console.log('contract: ', contract);
+    const address = tronWeb.address.fromPrivateKey(priv_key);
+    console.log("addr: ", address, tronWeb.address.toHex(address));
+    console.log("address:", contract.address);
+    contract.owner().call().then((addr) => {
+      console.log("owner: ", addr);
+    })
   })
 };
 

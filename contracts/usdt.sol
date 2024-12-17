@@ -8,7 +8,7 @@ contract Account {
     address public owner;
     address payable public receiver;
 
-    event Flush(address, uint256);
+    event FlushEvent(address, uint256);
 
     constructor(address payable _receiver) {
         owner = msg.sender;
@@ -25,7 +25,7 @@ contract Account {
         }
 
         ITRC20(current).transfer(receiver, balance);
-        emit Flush(receiver, balance);
+        emit FlushEvent(receiver, balance);
     }
 }
 
@@ -33,7 +33,7 @@ contract Gateway {
     address public owner;
     mapping(address => bool) public accounts;
 
-    event Create(address);
+    event CreateEvent(address);
 
     constructor() {
         owner = msg.sender;
@@ -44,6 +44,6 @@ contract Gateway {
 
         Account account = new Account{salt: _salt}(_to);
         accounts[address(account)] = true;
-        emit Create(address(account));
+        emit CreateEvent(address(account));
     }
 }
