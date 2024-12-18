@@ -44,6 +44,7 @@ contract Gateway {
 
         Account account = new Account{salt: _salt}(_to);
         accounts[address(account)] = true;
+
         emit CreateEvent(address(account));
     }
 }
