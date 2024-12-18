@@ -72,31 +72,6 @@ describe("TRON-USDT", function() {
     return '0x' + hash?.slice(-40).toLowerCase();
   }
 
-  before(async function() {
-    tronWeb = new TronWeb(
-      full_node,
-      solidity_node,
-      event_server,
-      private_key,
-    );
-
-    contract = await tronWeb.contract().new({
-      abi: artifacts.abi,
-      bytecode: artifacts.bytecode
-    });
-  });
-
-  describe("Deployment Contract", function() {
-    it("deploy contract and check the owner", async function() {
-      // ref: https://github.com/tronprotocol/tronweb/blob/v5.3.2/test/utils/accounts.test.js#L21
-      const address = TronWeb.address.fromPrivateKey(private_key);
-      const hex = TronWeb.address.toHex(address as string);
-
-      const ownerAddress = await contract.owner().call();
-      expect(ownerAddress).to.equal(hex);
-    });
-  });
-
   async function createAccountContract(initAddress: string, to: string, saltHex: BytesLike): Promise<string> {
     let accountAddress = initAddress;
     let intervalStoped = false;
@@ -128,6 +103,31 @@ describe("TRON-USDT", function() {
 
     return accountAddress;
   }
+
+  before(async function() {
+    tronWeb = new TronWeb(
+      full_node,
+      solidity_node,
+      event_server,
+      private_key,
+    );
+
+    contract = await tronWeb.contract().new({
+      abi: artifacts.abi,
+      bytecode: artifacts.bytecode
+    });
+  });
+
+  describe("Deployment Contract", function() {
+    it("deploy contract and check the owner", async function() {
+      // ref: https://github.com/tronprotocol/tronweb/blob/v5.3.2/test/utils/accounts.test.js#L21
+      const address = TronWeb.address.fromPrivateKey(private_key);
+      const hex = TronWeb.address.toHex(address as string);
+
+      const ownerAddress = await contract.owner().call();
+      expect(ownerAddress).to.equal(hex);
+    });
+  });
 
   describe("Create Account", function() {
     it("create one account with predictable address", async function() {
@@ -204,7 +204,27 @@ describe("TRON-USDT", function() {
 
   });
 
-  describe("Deposit & Withdraw", function() {
+  // TODO:
+  describe("Check, Deposit & Withdraw", function() {
+    it("check the balance of TRX", async function() {
+      const address = tronWeb.defaultAddress["base58"];
+      const balance = await tronWeb.trx.getBalance(address);
+
+      console.log("balance: ", balance);
+    });
+
+    it("check the balance of USDT", async function() {
+      const saltBytes = digest("user1");
+      const saltHex = saltBytes.toString('hex');
+      let exist = false;
+
+      // calculate CREATE2 address
+      const initCode = buildInitCode(accountArtifacts.bytecode, to);
+      const predictedAccountAddress = buildCreate2Address(contract.address, saltHex, initCode);
+      console.log("predictedAccountAddress: ", predictedAccountAddress);
+
+      const contractAddress = buildCreate2Address(tronWeb.address, );
+    });
 
   });
 
