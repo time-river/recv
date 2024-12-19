@@ -20,7 +20,7 @@ const full_node = "http://127.0.0.1:" + port;
 const solidity_node = full_node;
 const event_server = full_node;
 
-describe("TRON-USDT", function() {
+describe("TRON-LOCAL", function() {
   let tronWeb: TronWeb;
   let contract: any;
 
@@ -78,7 +78,7 @@ describe("TRON-USDT", function() {
     const txID = await contract.create(to, saltHex).send();
 
     const intervalId = setInterval(async () => {
-      await tronWeb.event.getEventsByTransactionID(txID)
+      tronWeb.event.getEventsByTransactionID(txID)
         .then((event) => {
           if (event.data) {
             const data = event.data[0];
@@ -205,7 +205,7 @@ describe("TRON-USDT", function() {
   });
 
   // TODO:
-  describe("Check, Deposit & Withdraw", function() {
+  describe("Check", function() {
     it("check the balance of TRX", async function() {
       const address = tronWeb.defaultAddress["base58"];
       const balance = await tronWeb.trx.getBalance(address);
@@ -213,7 +213,9 @@ describe("TRON-USDT", function() {
       console.log("balance: ", balance);
     });
 
+    it("check bandwidth & energy")
     it("check the balance of USDT", async function() {
+      const to = "000";
       const saltBytes = digest("user1");
       const saltHex = saltBytes.toString('hex');
       let exist = false;
@@ -222,8 +224,6 @@ describe("TRON-USDT", function() {
       const initCode = buildInitCode(accountArtifacts.bytecode, to);
       const predictedAccountAddress = buildCreate2Address(contract.address, saltHex, initCode);
       console.log("predictedAccountAddress: ", predictedAccountAddress);
-
-      const contractAddress = buildCreate2Address(tronWeb.address, );
     });
 
   });
