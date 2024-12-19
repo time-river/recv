@@ -9,10 +9,14 @@ contract Account {
     address payable public receiver;
 
     event FlushEvent(address, uint256);
+    //event Log(string, uint256);
 
     constructor(address payable _receiver) {
         owner = msg.sender;
         receiver = _receiver;
+
+        //address current = address(this);
+       // emit Log(">>> getBalance: ", ITRC20(current).balanceOf(current));
     }
 
     function flush() public {
