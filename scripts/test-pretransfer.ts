@@ -106,12 +106,13 @@ async function createAccountContract(contract: Contract, to: string, saltHex: By
 }
 
 async function getBalance(address: string): Promise<number> {
+  const addr = TronWeb.address.toHex(address);
   const tron = new TronWeb(
     full_node,
     solidity_node,
     event_server,
   );
-  const balance = await tron.trx.getBalance(address);
+  const balance = await tron.trx.getBalance(addr);
 
   return balance / 1000000 ;
 }
@@ -126,20 +127,31 @@ async function contractState(address: string) {
   );
 
   const result = await tron.trx.getContract(addr);
-  console.log(">>> ", result)
-  const exist = result.abi && result.byteCode;
+//   console.log(">>> contact ctx: ", result)
+  const exist = Object.keys(result).length !== 0;
   console.log(addr, " exist: ", exist);
+  if (exist) {
+    console.log("original_address: ", result.origin_address);
+  }
 }
 
-function transfer() {
-
+async function transfer(contract: Contract, to: string, amount: number) {
+  const addr = TronWeb.address.toHex(to);
+  let balance = await getBalance(addr);
+  console.log("before transfer: ", balance);
+  console.log("send ", amount, "to ", addr);
+  const result = await contract.transfer(addr, amount).send();
+  console.log("transfer msg: ", result);
+  balance = await getBalance(addr);
+  console.log("after transfer: ", balance);
 }
 
 async function main() {
   const address = await TronWeb.address.fromPrivateKey(priv_key) as string;
   console.log("wallet balance: ", await getBalance(address))
+  contractState(address);
   depoly().then(async (contract: Contract) => {
-    contractState(contract.address)
+    contractState(contract.address as string)
     console.log("contract address: ", contract.address);
     const owner = await contract.owner().call();
     console.log("owner: ", owner);
@@ -155,11 +167,15 @@ async function main() {
     console.log("predict address: ", address, await contract.accounts(address).call());
     contractState(address);
 
+    transfer(address, 1000000);
     address = await createAccountContract(contract, to, saltBytes);
     console.log("true address: ", address, await contract.accounts(address).call());
-    contractState(address);
+    //contractState(address);
 
-    //console.log("self balance: ", await getBalance(owner));
+    transfer(address, 1000000);
+    console.log(address, " balance: ",
+        await getBalance(address),
+        await getBalance(TronWeb.address.toHex(address)));
   });
 }
 
