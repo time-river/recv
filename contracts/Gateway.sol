@@ -33,28 +33,43 @@ contract Gateway {
     address public owner;
     mapping (address => bool) public accounts;
 
-    event Create(address, address);
-    event Log(bytes32);
+    event Create(address);
+    event LogBytes(bytes);
+    event Logbytes32(bytes32);
 
     constructor() {
         owner = msg.sender;
     }
 
-    function initCodeHash(address to) public returns (bytes memory) {
+    function initCodeHash(address to) public pure returns (bytes32) {
         bytes memory bytecode = abi.encodePacked(type(Account).creationCode, abi.encode(to));
-        emit Log(to);
-        return bytecode;
+//        emit Log(keccak256(bytecode));
+        return keccak256(bytecode);
     }
 
-    function create(address payable to, bytes32 salt) external returns(address) {
+    function getAddress(bytes32 salt, bytes32 codeHash) public {
+        bytes memory byteCode = abi.encodePacked(
+            bytes1(0xff),
+            address(this),
+            salt,
+            codeHash
+        );
+
+        emit LogBytes(byteCode);
+        //emit Logbytes32(keccak256(byteCode));
+    }
+
+    function create(address payable to, bytes32 salt) public {
         require(msg.sender == owner, "403");
 
-        initCodeHash(to);
+        //bytes32 hash = initCodeHash(to);
+        //emit Log(hash);
+
+        //getAddress(salt, hash);
 
         Account account = new Account{salt: salt}(to);
         accounts[address(account)] = true;
-        //emit Create(address(account), address(this));
 
-        return address(account);
+        emit Create(address(account));
     }
 }
