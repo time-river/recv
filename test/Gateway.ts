@@ -27,20 +27,24 @@ describe("Gateway", function () {
       return predict;
   }
 
-  before(() => {
-
-  });
+  async function getBalance(address: string) {
+    const wei = await hre.ethers.provider.getBalance(address);
+    const eth = hre.ethers.formatEther(wei);
+ 
+    return { wei, eth };
+  }
 
   async function depoly() {
     const [owner, otherAccount] = await hre.ethers.getSigners();
 
     const Gateway = await hre.ethers.getContractFactory("Gateway", { signer: owner });
     const gateway =  await Gateway.deploy();
+    await gateway.waitForDeployment();
 
     return { gateway, owner, otherAccount}
   }
 
-  describe("deploy", function () {
+  describe("Deploy", function () {
     it("Should deploy", async function () {
       const { gateway, owner } = await loadFixture(depoly);
 
@@ -90,8 +94,8 @@ describe("Gateway", function () {
     });
 
     it("Create repeat sub-contract", async function() {
-      const salt = createHash("sha256").update("user12").digest();
       const { gateway, owner, otherAccount } = await loadFixture(depoly);
+      const salt = createHash("sha256").update("user12").digest();
       const to = otherAccount.address;
 
       const predict = buildCreate2Address(await gateway.getAddress(), to, salt);
@@ -122,6 +126,86 @@ describe("Gateway", function () {
       } finally {
         expect(right).to.equal(true);
       }
+    });
+  });
+
+  describe("Balance & Transfer", function() {
+    it("Wallet of balance & transfer", async function() {
+      const [owner, otherAccount] = await hre.ethers.getSigners();
+
+      const balance1 = await getBalance(owner.address);
+      console.log(`wallet ${owner.address} balance: ${balance1.eth}`);
+
+      const balance2 = await getBalance(otherAccount.address); 
+      console.log(`${otherAccount.address} balance: ${balance2.eth}`);
+
+      const amount = hre.ethers.parseEther("1");
+      const tx = {
+        to: otherAccount.address,
+        value: amount,
+      };
+      await owner.sendTransaction(tx);
+
+      const balance3 = await getBalance(otherAccount.address);
+      console.log(`${otherAccount.address} balance: ${balance3.eth}`);
+      expect(balance3.wei).to.equal(balance2.wei+amount);
+    });
+
+    it("Balance of existing contract balance", async function() {
+      const { gateway, owner } = await loadFixture(depoly);
+
+      const address = await gateway.getAddress();
+      const { eth } = await getBalance(address);
+      console.log(`contract ${address} balance: ${eth}`);
+    });
+
+    it("Contract balance & transfer", async function() {
+      const { gateway, owner, otherAccount } = await loadFixture(depoly);
+      const to = otherAccount.address;
+      const salt = createHash("sha256").update("user1223").digest();
+
+      const predict = buildCreate2Address(await gateway.getAddress(), to, salt);
+      let exist = await gateway.accounts(predict);
+      expect(exist).to.equal(false);
+
+      // 1st check
+      const balance1 = await getBalance(predict);
+      console.log(`1st, contract ${predict} balance: ${balance1.eth}`);
+      expect(balance1.wei).to.equal(0);
+
+      // 1st transfer
+      const amount = hre.ethers.parseEther("1");
+      const msg = {
+        to: predict,
+        value: amount,
+      };
+      await owner.sendTransaction(msg);
+
+      // 2nd check
+      const balance2 = await getBalance(predict);
+      console.log(`2nd, contract ${predict} balance: ${balance2.eth}`);
+      expect(balance2.wei).to.equal(amount);
+
+      // create sub-contract
+      const tx = await gateway.create(to, salt);
+      const rc = await tx.wait();
+      expect(rc && rc.status == 1, "transaction failed").to.equal(true);
+
+      exist = await gateway.accounts(predict);
+      expect(exist).to.equal(true);
+
+      // 3rd check
+      const balance3 = await getBalance(predict);
+      console.log(`3st, contract ${predict} balance: ${balance3.eth}`);
+      expect(balance3.wei).to.equal(amount);
+
+      // 2nd transfer
+      await owner.sendTransaction(msg);
+
+      // 4th check
+      const balance4 = await getBalance(predict);
+      console.log(`4th, contract ${predict} balance: ${balance4.eth}`);
+      expect(balance4.wei).to.equal(amount+amount);
     });
   });
 });

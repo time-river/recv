@@ -7,8 +7,12 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 contract Account {
     address payable public _receiver;
 
+    event Deposit(address, uint256);
+    event Receved(uint256);
+
     constructor(address payable receiver) {
         _receiver = receiver;
+        emit Receved(address(this).balance);
     }
 
     function ethBalance() public view returns (uint256) {
@@ -26,6 +30,14 @@ contract Account {
     function flushUsdt() external {
         IERC20 token = IERC20(address(this));
         token.transfer(_receiver, usdtBalance());
+    }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    fallback() external payable {
+        emit Deposit(msg.sender, msg.value);
     }
 }
 
@@ -59,7 +71,7 @@ contract Gateway {
         //emit Logbytes32(keccak256(byteCode));
     }
 
-    function create(address payable to, bytes32 salt) public {
+    function create(address payable to, bytes32 salt) external {
         require(msg.sender == owner, "403");
 
         //bytes32 hash = initCodeHash(to);
