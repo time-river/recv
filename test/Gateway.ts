@@ -155,6 +155,23 @@ describe("Gateway", function () {
         expect(right).to.equal(true);
       }
     });
+
+    it("No priviledge", async function() {
+      const { gateway, owner, otherAccount } = await loadFixture(depoly);
+      const salt = createHash("sha256").update("user12").digest();
+      const to = owner.getAddress();
+      let right = false;
+    
+      const contract = gateway.connect(otherAccount);
+      try {
+        await contract.create(to, salt);
+      } catch(e: any) {
+        console.log("Error msg:", e.message);
+        right = true;
+      } finally {
+        expect(right).to.equal(true);
+      }
+    });
   });
 
   describe("Balance & Transfer", function() {
