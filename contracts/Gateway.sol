@@ -9,6 +9,7 @@ contract Account {
 
     event Deposit(address, uint256);
     event Receved(uint256);
+    event Construct(address);
 
     constructor(address payable receiver) {
         _receiver = receiver;

@@ -1,6 +1,6 @@
 import { createHash} from "crypto";
 
-import { BytesLike } from "ethers";
+import { BytesLike, Contract, Provider } from "ethers";
 import hre from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
@@ -9,6 +9,33 @@ import artifacts from "../artifacts/contracts/Gateway.sol/Account.json";
 
 function sleep(callback: (args: void) => void, ms: number) {
   return new Promise((callback) => setTimeout(callback, ms));
+}
+
+
+async function scanBlocks(provider: Provider, from: string) {
+  let lastBlockNumber = await provider.getBlockNumber();
+
+  setInterval(async () => {
+    const currentBlockNumber = await provider.getBlockNumber();
+
+    if (currentBlockNumber > lastBlockNumber) {
+        for (let i = lastBlockNumber + 1; i <= currentBlockNumber; i++) {
+            const block = await provider.getBlock(i, true);
+
+            block?.prefetchedTransactions.forEach(tx => {
+                // 检查交易中的发送或接收地址
+
+                console.log(tx.toJSON());
+                //if (tx.from === from) {
+                //    console.log(`检测到相关交易: ${tx.hash}`);
+                //    console.log(tx.data);
+                    // 进一步处理（解析交易等）
+                //}
+            });
+        }
+        lastBlockNumber = currentBlockNumber;
+    }
+  }, 1000); // 每 1 秒检查一次
 }
 
 describe("Gateway", function () {
@@ -69,7 +96,7 @@ describe("Gateway", function () {
       console.log("predict: ", predict, ", exist: ", exist);
       expect(exist).to.equal(false);
 
-      gateway.addListener("Create", (msg) => {
+      gateway.once("Create", (msg) => {
         console.log(`recv Create event msg: ${msg}`);
         stopCycle = 0;
       });
@@ -91,6 +118,7 @@ describe("Gateway", function () {
         await sleep(() => {stopCycle -= 1;}, 1000);
         stopCycle -= 1;
       }
+      gateway.removeAllListeners("Create");
     });
 
     it("Create repeat sub-contract", async function() {
@@ -190,13 +218,16 @@ describe("Gateway", function () {
       const tx = await gateway.create(to, salt);
       const rc = await tx.wait();
       expect(rc && rc.status == 1, "transaction failed").to.equal(true);
+      if (!rc || rc.status != 1) {
+        return;
+      }
 
       exist = await gateway.accounts(predict);
       expect(exist).to.equal(true);
 
       // 3rd check
       const balance3 = await getBalance(predict);
-      console.log(`3st, contract ${predict} balance: ${balance3.eth}`);
+      console.log(`3nd, contract ${predict} balance: ${balance3.eth}`);
       expect(balance3.wei).to.equal(amount);
 
       // 2nd transfer
@@ -206,6 +237,10 @@ describe("Gateway", function () {
       const balance4 = await getBalance(predict);
       console.log(`4th, contract ${predict} balance: ${balance4.eth}`);
       expect(balance4.wei).to.equal(amount+amount);
+    });
+
+    it("Balance of ERC20", async function() {
+
     });
   });
 });
