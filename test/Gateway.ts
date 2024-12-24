@@ -239,8 +239,22 @@ describe("Gateway", function () {
       expect(balance4.wei).to.equal(amount+amount);
     });
 
-    it("Balance of ERC20", async function() {
+    it("Balance of ERC20 in wallet", async function() {
+      const [owner, otherAccount] = await hre.ethers.getSigners();
+      const abi = [
+        // Read-Only Functions
+        "function balanceOf(address owner) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function symbol() view returns (string)",
+    
+        // Authenticated Functions
+        "function transfer(address to, uint amount) returns (bool)",
+    
+        // Events
+        "event Transfer(address indexed from, address indexed to, uint amount)"
+      ];
 
+      
     });
   });
 });

@@ -1,5 +1,6 @@
 import { HardhatUserConfig, vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-viem";
 
 // Go to https://infura.io, sign up, create a new API key
 // in its dashboard, and add it to the configuration variables
