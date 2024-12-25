@@ -1,4 +1,4 @@
-import viem, { formatEther, formatUnits, parseAbi, parseUnits } from "viem";
+import viem, { formatEther, formatUnits, parseAbi, parseAbiItem, parseUnits } from "viem";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { getBalance } from "viem/_types/actions/public/getBalance";
@@ -49,6 +49,27 @@ async function erc20Balance(address: `0x${string}`) {
     console.log("usdt: ", usdt);
 }
 
+async function transaction(to: `0x${string}`) {
+    const transferEvent = 'event Transfer(address indexed from, address indexed to, uint256 value)';
+
+    const logs = await publicClient.getLogs({
+        address: usdtContractAddress,
+        event: parseAbiItem(transferEvent),
+        args: {
+            to: to,
+        },
+        fromBlock: 0n,
+        toBlock: 'latest',
+    });
+
+    logs.forEach((log: any) => {
+        const from = '0x' + log.topics[1].slice(26);  // 提取 `from` 地址
+        const to = '0x' + log.topics[2].slice(26);    // 提取 `to` 地址
+        const value = BigInt(log.data);  // 转账金额，通常是大整数
+        console.log(`From: ${from}, To: ${to}, Value: ${value}`);
+    });
+}
+
 async function main() {
     console.log(">>>>>>>>>>>> block test >>>>>>>>>>>")
     await block();
@@ -69,6 +90,9 @@ async function main() {
     console.log(">>>>>>>>>>>>> empty contract balance >>>>>>>>>>");
     await ethBalance(emptyContractAddress);
     await erc20Balance(emptyContractAddress);
+
+    console.log(">>>>>>>>>>>>> transaction >>>>>>>>>>>>>>>>");
+    await transaction(emptyContractAddress);
 }
 
 main().then(() => {});
