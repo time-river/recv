@@ -11,33 +11,6 @@ function sleep(callback: (args: void) => void, ms: number) {
   return new Promise((callback) => setTimeout(callback, ms));
 }
 
-
-async function scanBlocks(provider: Provider, from: string) {
-  let lastBlockNumber = await provider.getBlockNumber();
-
-  setInterval(async () => {
-    const currentBlockNumber = await provider.getBlockNumber();
-
-    if (currentBlockNumber > lastBlockNumber) {
-        for (let i = lastBlockNumber + 1; i <= currentBlockNumber; i++) {
-            const block = await provider.getBlock(i, true);
-
-            block?.prefetchedTransactions.forEach(tx => {
-                // 检查交易中的发送或接收地址
-
-                console.log(tx.toJSON());
-                //if (tx.from === from) {
-                //    console.log(`检测到相关交易: ${tx.hash}`);
-                //    console.log(tx.data);
-                    // 进一步处理（解析交易等）
-                //}
-            });
-        }
-        lastBlockNumber = currentBlockNumber;
-    }
-  }, 1000); // 每 1 秒检查一次
-}
-
 describe("Gateway", function () {
 
   function buildCreate2Address(from: string, to: string, salt: BytesLike): string {
