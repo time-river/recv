@@ -3,9 +3,9 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import hre from "hardhat";
 import { expect } from "chai";
-import { encodeAbiParameters, encodePacked, getContractAddress, keccak256, parseAbiItem, sha256, toBytes } from "viem";
+import { parseAbiItem, sha256, toBytes } from "viem";
 
-import artifacts from "../artifacts/contracts/Wallet.sol/Wallet.json";
+import { predictWalletAddress } from "./utils";
 
 function sleep(ms: number) {
   const cb = () => {};
@@ -115,16 +115,7 @@ describe("Gateway", () => {
       });
 
       // calculate create2 address
-      const initCode = encodePacked(
-        ["bytes"],
-        [artifacts.bytecode as `0x${string}`]
-      );
-      const predict = getContractAddress({
-        bytecodeHash: keccak256(initCode),
-        from: gateway.address,
-        opcode: "CREATE2",
-        salt: salt,
-      });
+      const predict = predictWalletAddress(gateway.address, owner.account.address, salt);
 
       let exist = await publicClient.readContract({
         address: gateway.address,

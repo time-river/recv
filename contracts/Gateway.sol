@@ -12,7 +12,7 @@ contract Gateway is Ownable {
     constructor() Ownable(msg.sender) {}
 
     function createWallet(bytes32 salt) external onlyOwner {
-        Wallet wallet = new Wallet{salt: salt}();
+        Wallet wallet = new Wallet{salt: salt}(msg.sender);
         wallets[address(wallet)] = true;
         emit CreateWallet(address(wallet));
     }

@@ -9,7 +9,7 @@ describe("Wallet", () => {
   async function deploy() {
     const [owner, otherAccount] = await hre.viem.getWalletClients();
 
-    const wallet = await hre.viem.deployContract("Wallet", []);
+    const wallet = await hre.viem.deployContract("Wallet", [owner.account.address]);
     const publicClient = await hre.viem.getPublicClient();
 
     return {wallet, owner, otherAccount, publicClient};
