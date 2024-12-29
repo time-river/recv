@@ -109,4 +109,22 @@ describe("Wallet", () => {
       }
     });
   });
+
+  describe("Transfer", () => {
+    it("reject transfer native coin", async () => {
+      const { wallet, owner, otherAccount } = await loadFixture(deploy);
+      const to = otherAccount.account.address;
+      const amount = BigInt(1);
+
+      try {
+        await owner.sendTransaction({
+          to: wallet.address,
+          value: amount
+        });
+        expect(false).to.be.true;
+      } catch(e: any) {
+        expect(e.details).to.include("501 Not Implemented");
+      }
+    });
+  });
 });
