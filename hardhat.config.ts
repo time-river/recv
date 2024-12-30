@@ -10,7 +10,10 @@ const config: HardhatUserConfig = {
         runs: 200
       }
     }
-  }
+  },
+  mocha: {
+    timeout: 1200000,
+  },
 };
 
 export default config;

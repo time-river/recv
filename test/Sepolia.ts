@@ -131,8 +131,6 @@ describe("Sepolia Gateway", function () {
     let walletContractAddress: `0x${string}` = "0x0000000000000000000000000000000000000000";
 
     it("create wallet", async () => {
-      this.timeout(12000);
-
       const {ownerAccount, anotherAccount} = getAccounts();
       const contract = createContractClient(ownerAccount, gatewayContractAddress, gatewayArtifacts.abi);
       const salt = sha256(toBytes("user1" + new Date().getTime().toString()));
@@ -246,7 +244,6 @@ describe("Sepolia Gateway", function () {
       if (walletContractAddress === "0x0000000000000000000000000000000000000000") {
         throw new Error("wallet contract address is not created")
       }
-      this.timeout(120000);
 
       const publicClient = createPublicClient({
         chain: sepolia,
