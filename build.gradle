@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'org.web3j' version '4.12.3'
+}
+
+group = 'tech.yobit'
+version = '1.0'
+
+sourceCompatibility = '21'
+targetCompatibility = '21'
+
+repositories {
+    mavenCentral()
+}
+
+web3j {
+    generatedPackageName = 'tech.yobit.generated.{0}'
+    useNativeJavaTypes = true
+    addressBitLength = 160 // Ethereum address length
+}
+
+solidity {
+    executable = './bin/solc.exe'
+    version = '0.8.28'
+}
+
+dependencies {
+    implementation 'org.web3j:core:4.12.3'
+    implementation 'org.web3j:web3j-openapi-client:4.12.3'
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
