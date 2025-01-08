@@ -16,13 +16,23 @@ import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.generated.wallet.Wallet;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.BlockchainMeta;
+import tech.yobit.web3.types.ContractAddress;
 
+/**
+ * 1. one gateway multiple wallet
+ * 2. one user multiple wallet
+ * 3. different wallet different user, or different blockchain
+ * 4. all gateway is control by one private key
+ */
 public class GatewayContract {
     private static final Logger log = LoggerFactory.getLogger(GatewayContract.class);
 
     private final BlockchainMeta mBlockchain;
+    private final Web3j mWeb3j;
     private final Credentials mCredentials;
     private final Gateway mGatewayContract;
+
+    // don't need to record WalletContract own to it maybe unlimited
 
     public GatewayContract(String privateKey, BlockchainMeta blockchain) {
         mBlockchain = blockchain;
@@ -30,16 +40,14 @@ public class GatewayContract {
         mCredentials = Credentials.create(privateKey);
         log.info("Credentials loaded, address: {}", mCredentials.getAddress());
 
-        Web3j web3j = Web3j.build(new HttpService(blockchain.url));
-
-        // TODO: fix gas limit
+        mWeb3j = Web3j.build(new HttpService(blockchain.url));
         mGatewayContract = Gateway.load(
                 blockchain.gatewayAddress.toHex(),
-                web3j, mCredentials, new DefaultGasProvider()
+                mWeb3j, mCredentials, new DefaultGasProvider() // TODO: fix gas limit
         );
 
-        log.info("Gateway {} connected to {} network",
-                blockchain.gatewayAddress.toHex(), blockchain.name);
+        log.info("Gateway {} connected to {}({}) network",
+                blockchain.gatewayAddress.toHex(), blockchain.name, blockchain.id);
     }
 
     private byte[] generateSalt(String salt) {
@@ -48,22 +56,21 @@ public class GatewayContract {
     }
 
     private String generateInitCode() {
-        return Wallet.BINARY +
-                TypeEncoder.encode(mBlockchain.gatewayAddress);
+        Address args = Address.fromHex(mCredentials.getAddress());
+        return Wallet.BINARY + TypeEncoder.encode(args);
     }
 
-    private Address predictWalletAddress(byte[] salt) {
+    private ContractAddress predictWalletAddress(byte[] salt)  {
         String initCode = generateInitCode();
 
         byte[] address = ContractUtils.generateCreate2ContractAddress(
                 mBlockchain.gatewayAddress.toBytes(), salt, Numeric.hexStringToByteArray(initCode)
         );
-        return Address.fromBytes(address);
+        return new ContractAddress(mBlockchain.id, address);
     }
 
-    public Address predictWalletAddress(String saltValue) {
-        byte[] salt = generateSalt(saltValue);
-
+    public ContractAddress predictWalletAddress(String uid)  {
+        byte[] salt = generateSalt(uid);
         return predictWalletAddress(salt);
     }
 
@@ -71,22 +78,38 @@ public class GatewayContract {
         return mGatewayContract.wallets(address.toHex()).send();
     }
 
-    // TODO
-    public Address checkAndCreateWallet(String saltString) throws Exception {
-        byte[] salt = generateSalt(saltString);
-        Address walletAddress = predictWalletAddress(salt);
+    /*
+     *  1. return wallet address if wallet already exists
+     *  2. create then return wallet address if wallet don't exist
+     */
+    public ContractAddress checkAndCreateWallet(String uid) throws Exception {
+        byte[] salt = generateSalt(uid);
+        ContractAddress walletAddress = predictWalletAddress(salt);
 
         boolean exist = checkWalletAddress(walletAddress);
         if (exist) {
             return walletAddress;
         }
 
-        TransactionReceipt receipt = mGatewayContract.createWallet(salt).send();
+        TransactionReceipt tx = mGatewayContract.createWallet(salt).send();
+        log.info("create wallet in {}({}), txId {}, status {}, gas used {}",
+                mBlockchain.name, mBlockchain.id,
+                tx.getTransactionHash(), tx.isStatusOK(), tx.getGasUsed()
+        );
 
-        return null;
+        if (tx.isStatusOK()) {
+            tx.getLogs().forEach(msg -> {
+                msg.getTopics().forEach(topic -> {
+                    log.info("topic: {}", topic);
+                });
+            });
+            return walletAddress;
+        } else {
+            return null;
+        }
     }
 
-    public WalletContract getWallet(Address address) {
-        return new WalletContract(address, mCredentials, mBlockchain);
+    public WalletContract getWalletContract(Address address) {
+        return new WalletContract(address, mBlockchain, mCredentials);
     }
 }

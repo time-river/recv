@@ -6,16 +6,14 @@ public class CoinMeta {
     public final String name;
     public final String fullName;
     public final int decimals;
-    public final BlockchainMeta blockchain;
-    public final Address coinContractAddress;
+    public final ContractAddress contractAddress;
 
     public CoinMeta(String name, String fullName, int decimals,
-                    BlockchainMeta blockchain, Address coinContractAddress) {
+                    int blockchainId, Address coinContractAddress) {
+        this.contractAddress = new ContractAddress(blockchainId, coinContractAddress);
         this.name = name;
         this.fullName = fullName;
         this.decimals = decimals;
-        this.blockchain = blockchain;
-        this.coinContractAddress = coinContractAddress;
     }
 
     public BigInteger parseUnits(String value) {

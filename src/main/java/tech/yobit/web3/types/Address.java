@@ -18,8 +18,12 @@ public class Address extends org.web3j.abi.datatypes.Address {
         this(DEFAULT_LENGTH, hexValue);
     }
 
-    private Address(byte[] bytesValue) {
+    public Address(byte[] bytesValue) {
         this(DEFAULT_LENGTH, bytesValue);
+    }
+
+    public Address(Address address) {
+        this(address.toBytes());
     }
 
     public static Address fromBase58(String base58) {

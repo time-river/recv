@@ -13,7 +13,7 @@ public class CryptoSupport {
     private static final Logger log = LoggerFactory.getLogger(CryptoSupport.class);
 
     static private final Map<Integer, BlockchainMeta> mBlockchains = new HashMap<>();
-    static private final Set<CoinMeta> mCryptoCoins = new HashSet<>();
+    static private final Set<CoinMeta> mCoinMetas = new HashSet<>();
     static private boolean mInitialized = false;
 
     static private Address parseAddress(String str) {
@@ -53,23 +53,33 @@ public class CryptoSupport {
 
                 CoinMeta obj = new CoinMeta(
                         coin.name, coin.fullName, coin.decimals,
-                        blockchain, parseAddress(chain.coinContractAddress)
+                        blockchain.id, parseAddress(chain.coinContractAddress)
                 );
 
-                mCryptoCoins.add(obj);
+                mCoinMetas.add(obj);
             }
         }
 
         mInitialized = true;
-        log.info("CryptoSupport initialized {} coins", mCryptoCoins.size());
+        log.info("CryptoSupport initialized {} coins, {} blockchains",
+                mCoinMetas.size(), mBlockchains.size());
     }
 
-    public CoinMeta[] getCryptoSupportInformation() {
+    public CoinMeta[] getCoinMetas() {
+        if (!mInitialized)  {
+            log.info("CryptoSupport isn't  initialized");
+            return null;
+        }
+
+        return mCoinMetas.toArray(new CoinMeta[0]);
+    }
+
+    public BlockchainMeta[] getBlockchains() {
         if (!mInitialized)  {
             log.info("CryptoSupport isn't initialized");
             return null;
         }
 
-        return mCryptoCoins.toArray(new CoinMeta[0]);
+        return mBlockchains.values().toArray(new BlockchainMeta[0]);
     }
 }
