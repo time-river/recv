@@ -6,16 +6,13 @@ import java.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EventLoop {
-    private static final Logger log = LoggerFactory.getLogger(EventLoop.class);
+public class Loop {
+    private static final Logger log = LoggerFactory.getLogger(Loop.class);
 
     private final LinkedBlockingDeque<Runnable> mEventQueue = new LinkedBlockingDeque<>();
-    private final ExecutorService mExecutorService;
+    private final ExecutorService mExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
-    public EventLoop(int workerCount) {
-        mWorkerCount = workerCount;
-        mExecutorService = Executors.newVirtualThreadPerTaskExecutor();
-    }
+    public Loop() { }
 
     public void postEvent(Runnable event) {
         mEventQueue.offer(event);
@@ -38,7 +35,7 @@ public class EventLoop {
     public void shutdown() {
         mExecutorService.shutdown();
         try {
-            if (!mExecutorService.awaitTermination(2, TimeUnit.SECONDS)) {
+            if (!mExecutorService.awaitTermination(3, TimeUnit.SECONDS)) {
                 mExecutorService.shutdownNow();
                 if (!mExecutorService.awaitTermination(3, TimeUnit.SECONDS)) {
                     log.error("EventLoop did not terminate");

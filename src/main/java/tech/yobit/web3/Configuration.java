@@ -10,12 +10,12 @@ public class Configuration {
     static public class Coin {
         public String name;
         public String fullName;
-        public int decimal;
+        public int decimals;
         public Blockchain[] blockchains;
 
         static public class Blockchain {
             public int id;
-            public String contractAddress;
+            public String coinContractAddress;
         }
     }
 

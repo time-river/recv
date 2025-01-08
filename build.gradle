@@ -22,6 +22,11 @@ web3j {
 solidity {
     executable = './bin/solc.exe'
     version = '0.8.28'
+    evmVersion = 'shanghai'
+    resolvePackages = true
+    optimize = true
+    optimizeRuns = 200
+    prettyJson = true
 }
 
 dependencies {

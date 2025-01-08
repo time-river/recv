@@ -13,50 +13,56 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 import tech.yobit.generated.gateway.Gateway;
-import tech.yobit.web3.utils.Address;
-import tech.yobit.web3.utils.Blockchain;
+import tech.yobit.generated.wallet.Wallet;
+import tech.yobit.web3.types.Address;
+import tech.yobit.web3.types.BlockchainMeta;
 
 public class GatewayContract {
     private static final Logger log = LoggerFactory.getLogger(GatewayContract.class);
 
-    private final Blockchain mBlockchain;
+    private final BlockchainMeta mBlockchain;
+    private final Credentials mCredentials;
     private final Gateway mGatewayContract;
 
-    public GatewayContract(String privateKey, Blockchain blockchain) {
+    public GatewayContract(String privateKey, BlockchainMeta blockchain) {
         mBlockchain = blockchain;
 
-        Credentials mCredentials = Credentials.create(privateKey);
-        log.info("Credentials loaded, wallet address: {}", mCredentials.getAddress());
+        mCredentials = Credentials.create(privateKey);
+        log.info("Credentials loaded, address: {}", mCredentials.getAddress());
 
         Web3j web3j = Web3j.build(new HttpService(blockchain.url));
-        log.info("Connected to {} network", blockchain.name);
 
-        mGatewayContract = Gateway.load(blockchain.gatewayAddress.toHex(),
-                web3j, mCredentials, new DefaultGasProvider()); // TODO: fix gas
+        // TODO: fix gas limit
+        mGatewayContract = Gateway.load(
+                blockchain.gatewayAddress.toHex(),
+                web3j, mCredentials, new DefaultGasProvider()
+        );
+
+        log.info("Gateway {} connected to {} network",
+                blockchain.gatewayAddress.toHex(), blockchain.name);
     }
 
     private byte[] generateSalt(String salt) {
-        byte[] bytes = Numeric.hexStringToByteArray(salt);
-        return Hash.sha3(bytes);
+        byte[] bytes = salt.getBytes();
+        return Hash.sha256(bytes);
     }
 
-    private byte[] generateInitCode(byte[] salt) {
-
-        String result = Gateway.BINARY +
-                Numeric.toHexStringNoPrefix(salt) +
+    private String generateInitCode() {
+        return Wallet.BINARY +
                 TypeEncoder.encode(mBlockchain.gatewayAddress);
-
-        return result.getBytes();
     }
 
-    public Address predictWalletAddress(byte[] salt) {
-        byte[] initCode = generateInitCode(salt);
-        byte[] address = ContractUtils.generateCreate2ContractAddress(mBlockchain.gatewayAddress.toBytes(), salt, initCode);
+    private Address predictWalletAddress(byte[] salt) {
+        String initCode = generateInitCode();
+
+        byte[] address = ContractUtils.generateCreate2ContractAddress(
+                mBlockchain.gatewayAddress.toBytes(), salt, Numeric.hexStringToByteArray(initCode)
+        );
         return Address.fromBytes(address);
     }
 
-    public Address predictWalletAddress(String saltString) {
-        byte[] salt = generateSalt(saltString);
+    public Address predictWalletAddress(String saltValue) {
+        byte[] salt = generateSalt(saltValue);
 
         return predictWalletAddress(salt);
     }
@@ -77,7 +83,10 @@ public class GatewayContract {
 
         TransactionReceipt receipt = mGatewayContract.createWallet(salt).send();
 
+        return null;
+    }
 
-        return "";
+    public WalletContract getWallet(Address address) {
+        return new WalletContract(address, mCredentials, mBlockchain);
     }
 }
