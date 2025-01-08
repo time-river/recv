@@ -16,6 +16,7 @@ import java.math.BigInteger;
 public class WithdrawEvent implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(WithdrawEvent.class);
 
+    private static int WAIT_MS = 10 * 1000;
     private final WalletContract mWalletContract;
     private final Coin mCoin;
     private final Address mTo;
@@ -48,15 +49,10 @@ public class WithdrawEvent implements Runnable {
                 if (balance.value.compareTo(mCoin.value) >= 0) {
                     return balance;
                 }
+
+                Thread.sleep(WAIT_MS);
             } catch (Exception e) {
                 log.error("getCoinBalance Error", e);
-            }
-
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                log.error("withdraw interrupted", e);
-                break;
             }
         }
 
