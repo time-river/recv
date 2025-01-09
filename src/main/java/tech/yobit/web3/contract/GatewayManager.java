@@ -7,6 +7,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.web3j.crypto.Credentials;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.Blockchain;
 
@@ -16,40 +17,35 @@ import tech.yobit.web3.types.Blockchain;
 public class GatewayManager {
     private static final Logger log = LoggerFactory.getLogger(GatewayManager.class);
 
-    private final String mPrivateKey;
+    private final Credentials mCredentials;
     private final List<Blockchain> mBlockchains = new ArrayList<>();
     private final HashMap<Integer, GatewayContract> mGatewayContracts = new HashMap<>();
 
     public GatewayManager(String privateKey, Blockchain[] blockchains) {
-        mPrivateKey = privateKey;
-        mBlockchains.addAll(List.of(blockchains));
+        mCredentials = Credentials.create(privateKey);
+        log.info("Credentials loaded, address: {}", mCredentials.getAddress());
+
+        for (Blockchain chain : blockchains) {
+            GatewayContract contract = new GatewayContract(mCredentials, chain);
+            mGatewayContracts.put(chain.id, contract);
+            mBlockchains.add(chain);
+        }
     }
 
-    public boolean updateGatewayContract(int blockchainId, Address address) {
-        Blockchain blockchain = null;
-
-        for (Blockchain chain : mBlockchains) {
-            if (chain.id == blockchainId) {
-                blockchain = chain;
-                break;
-            }
-        }
-        if (blockchain == null) {
-            log.warn("blockchainId {} don't support", blockchainId);
-            return false;
-        }
-
-        if (mGatewayContracts.containsKey(blockchainId)) {
-            log.warn("Gateway contract {} already exists in blockchain {}", address.toHex(), blockchainId);
-            return false;
-        }
-
-        GatewayContract contract = new GatewayContract(mPrivateKey, blockchain);
-        mGatewayContracts.put(blockchainId, contract);
-        return true;
+    public Blockchain[] getSupportedBlockchainTypes() {
+        return mBlockchains.toArray(new Blockchain[0]);
     }
 
     public GatewayContract findGatewayContract(int blockchainId) {
         return mGatewayContracts.get(blockchainId);
+    }
+
+    public WalletContract getWalletContract(int blockchainId, Address address, String uid) {
+        GatewayContract gatewayContract = findGatewayContract(blockchainId);
+        if (gatewayContract == null) {
+            return null;
+        }
+
+        return gatewayContract.getWalletContract(address, uid, mCredentials);
     }
 }

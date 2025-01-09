@@ -14,7 +14,7 @@ public class Address extends org.web3j.abi.datatypes.Address {
         super(bitSize, Numeric.toBigInt(hexValue));
     }
 
-    private Address(String hexValue) {
+    public Address(String hexValue) {
         this(DEFAULT_LENGTH, hexValue);
     }
 
@@ -23,7 +23,7 @@ public class Address extends org.web3j.abi.datatypes.Address {
     }
 
     public Address(Address address) {
-        this(address.toBytes());
+        super(address.toUint());
     }
 
     public static Address fromBase58(String base58) {

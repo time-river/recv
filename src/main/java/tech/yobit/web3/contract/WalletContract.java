@@ -30,10 +30,11 @@ import tech.yobit.web3.types.*;
 public class WalletContract {
     private static final Logger log = LoggerFactory.getLogger(WalletContract.class);
 
-    private final Blockchain mBlockchain;
-    private final ContractAddress mWalletAddress;
     private final Web3j mWeb3j;
     private final String mUid;
+
+    private final Blockchain mBlockchain;
+    private final ContractAddress mAddress;
     private final GatewayContract mGatewayContract;
     private final Wallet mWalletContract;
     private final List<CoinMeta> mCoinMetas = new ArrayList<>();
@@ -43,7 +44,7 @@ public class WalletContract {
         mUid = uid;
         mGatewayContract = gatewayContract;
         mBlockchain = blockchain;
-        mWalletAddress = new ContractAddress(blockchain.id, walletAddress);
+        mAddress = new ContractAddress(blockchain.id, walletAddress);
 
         mWeb3j = Web3j.build(new HttpService(blockchain.url));
 
@@ -58,17 +59,12 @@ public class WalletContract {
     }
 
     public ContractAddress getWalletAddress() {
-        return mWalletAddress;
+        return mAddress;
     }
 
     public boolean initialize() throws Exception {
-        ContractAddress address = mGatewayContract.checkAndCreateWallet(mUid);
-        if (address != null && address.equals(mWalletAddress)) {
-            return true;
-        }
-
-        log.error("Wallet address {} should be {}", address.toHex(), mWalletAddress.toHex());
-        return false;
+        ContractAddress address = mGatewayContract.checkAndCreateWallet(mUid, mAddress);
+        return address != null;
     }
 
     public boolean updateCoinMeta(CoinMeta coinMeta) {
@@ -106,21 +102,21 @@ public class WalletContract {
 
         Function func = new Function(
                 "balanceOf",
-                Arrays.asList(mWalletAddress),
+                Arrays.asList(mAddress),
                 Arrays.asList(new TypeReference<Uint256>() {})
         );
         String encodedFunc = FunctionEncoder.encode(func);
 
         String rc = mWeb3j.ethCall(
                 Transaction.createEthCallTransaction(
-                        mWalletAddress.toHex(), coinContractAddress.toHex(), encodedFunc
+                        mAddress.toHex(), coinContractAddress.toHex(), encodedFunc
                 ),
                 DefaultBlockParameterName.LATEST
         ).send().getValue();
 
         Coin coin = new Coin(Numeric.toBigInt(rc), coinMeta);
         log.info("Wallet {}, {}({}) balance {} in {}({}))",
-                    mWalletAddress.toHex(), coinMeta.name, coinMeta.contractAddress.toHex(),
+                mAddress.toHex(), coinMeta.name, coinMeta.contractAddress.toHex(),
                     coin.formatUnits(), mBlockchain.name, mBlockchain.id);
 
         return coin;
@@ -132,7 +128,7 @@ public class WalletContract {
         ).send();
 
         log.info("Wallet {} withdraw {}({}) to {}, txId {}, status {}, gas used {}",
-                mWalletAddress.toHex(), coin.formatUnits(), coin.parseUnits(), to.toHex(),
+                mAddress.toHex(), coin.formatUnits(), coin.parseUnits(), to.toHex(),
                 tx.getTransactionHash(), tx.isStatusOK(), tx.getGasUsed()
         );
 
@@ -140,7 +136,7 @@ public class WalletContract {
             return tx.getTransactionHash();
         } else {
             log.error("Wallet {} withdraw failed, txId {}, msg:\n{}",
-                    mWalletAddress.toHex(), tx.getTransactionHash(), tx.getLogs());
+                    mAddress.toHex(), tx.getTransactionHash(), tx.getLogs());
 
             return null;
         }

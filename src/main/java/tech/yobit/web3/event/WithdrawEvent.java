@@ -45,16 +45,16 @@ public class WithdrawEvent implements Runnable {
                 mCallback.reject(null);
             }
 
-            String txId = mWalletContract.withdraw(mTo, balance);
+            String txId = mWalletContract.withdraw(mTo, mCoin);
             if (txId == null) {
-                mCallback.reject(new Coin[]{balance});
+                mCallback.reject(new Coin[]{mCoin});
             } else {
-                mCallback.resolve(new Object[]{txId, balance});
+                mCallback.resolve(new Object[]{txId, mCoin});
             }
         } catch (Exception e) {
             log.error("withdraw Error", e);
 
-            mCallback.reject(new Coin[]{balance});
+            mCallback.reject(new Coin[]{mCoin});
         }
     }
 }

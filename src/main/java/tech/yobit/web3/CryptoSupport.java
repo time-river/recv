@@ -15,32 +15,14 @@ import tech.yobit.web3.types.CoinMeta;
 public class CryptoSupport {
     private static final Logger log = LoggerFactory.getLogger(CryptoSupport.class);
 
-    static private final Map<Integer, Blockchain> mBlockchains = new HashMap<>();
-    static private final Set<CoinMeta> mCoinMetas = new HashSet<>();
-    static private boolean mInitialized = false;
+    private final Map<Integer, Blockchain> mBlockchains = new HashMap<>();
+    private final Set<CoinMeta> mCoinMetas = new HashSet<>();
 
-    static private Address parseAddress(String str) {
-        Address address;
-
-        if (Base58.isValidBase58((str))) {
-            address = Address.fromBase58(str);
-        } else {
-            address = Address.fromHex(str);
-        }
-
-        return address;
-    }
-
-    synchronized public static void parseConfig(Configuration config) {
-        if (mInitialized) {
-            log.info("CryptoSupport has been initialized");
-            return;
-        }
-
+    public CryptoSupport(Configuration config) {
         for (BlockchainConfig chain : config.blockchains) {
             String url = config.defaultUrl;
 
-            if (!chain.url.isEmpty()) {
+            if (chain.url != null && !chain.url.isEmpty()) {
                 url = chain.url;
             }
 
@@ -63,26 +45,27 @@ public class CryptoSupport {
             }
         }
 
-        mInitialized = true;
         log.info("CryptoSupport initialized {} coins, {} blockchains",
                 mCoinMetas.size(), mBlockchains.size());
     }
 
-    public CoinMeta[] getCoinMetas() {
-        if (!mInitialized)  {
-            log.info("CryptoSupport isn't  initialized");
-            return null;
+    private Address parseAddress(String str) {
+        Address address;
+
+        if (Base58.isValidBase58((str))) {
+            address = Address.fromBase58(str);
+        } else {
+            address = Address.fromHex(str);
         }
 
+        return address;
+    }
+
+    public CoinMeta[] getCoinMetas() {
         return mCoinMetas.toArray(new CoinMeta[0]);
     }
 
     public Blockchain[] getBlockchains() {
-        if (!mInitialized)  {
-            log.info("CryptoSupport isn't initialized");
-            return null;
-        }
-
         return mBlockchains.values().toArray(new Blockchain[0]);
     }
 }
