@@ -16,7 +16,6 @@ import java.math.BigInteger;
 public class WithdrawEvent implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(WithdrawEvent.class);
 
-    private static int WAIT_MS = 10 * 1000;
     private final WalletContract mWalletContract;
     private final Coin mCoin;
     private final Address mTo;
@@ -39,41 +38,13 @@ public class WithdrawEvent implements Runnable {
         mTimeoutMs = timeoutMs;
     }
 
-    private Coin isEligible() {
-        long future = System.currentTimeMillis() + mTimeoutMs;
-        Coin balance = new Coin("0", mCoin.meta);
-
-        while (future >= System.currentTimeMillis()) {
-            try {
-                balance = mWalletContract.getCoinBalance(mCoin.meta.contractAddress);
-                if (balance.value.compareTo(mCoin.value) >= 0) {
-                    return balance;
-                }
-
-                Thread.sleep(WAIT_MS);
-            } catch (Exception e) {
-                log.error("getCoinBalance Error", e);
-            }
-        }
-
-        return balance;
-    }
-
     @Override
     public void run() {
-        Coin balance = isEligible();
-        if (balance.value.compareTo(mCoin.value)  < 0) {
-            log.info("wallet {} withdraw {} {} isn't eligible, now balance: {}",
-                    mWalletContract.getWalletAddress().toHex(),
-                    mCoin.name, mCoin.formatUnits(),
-                    balance.formatUnits()
-            );
-
-            mCallback.reject(new Coin[]{balance});
-            return;
-        }
-
         try {
+            if (!mWalletContract.initialize()) {
+                mCallback.reject(null);
+            }
+
             String txId = mWalletContract.withdraw(mTo, balance);
             if (txId == null) {
                 mCallback.reject(new Coin[]{balance});

@@ -4,15 +4,18 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tech.yobit.web3.config.BlockchainConfig;
+import tech.yobit.web3.config.CoinConfig;
+import tech.yobit.web3.config.Configuration;
 import tech.yobit.web3.types.Address;
+import tech.yobit.web3.types.Blockchain;
 import tech.yobit.web3.utils.Base58;
-import tech.yobit.web3.types.BlockchainMeta;
 import tech.yobit.web3.types.CoinMeta;
 
 public class CryptoSupport {
     private static final Logger log = LoggerFactory.getLogger(CryptoSupport.class);
 
-    static private final Map<Integer, BlockchainMeta> mBlockchains = new HashMap<>();
+    static private final Map<Integer, Blockchain> mBlockchains = new HashMap<>();
     static private final Set<CoinMeta> mCoinMetas = new HashSet<>();
     static private boolean mInitialized = false;
 
@@ -34,22 +37,22 @@ public class CryptoSupport {
             return;
         }
 
-        for (Configuration.Blockchain chain : config.blockchains) {
+        for (BlockchainConfig chain : config.blockchains) {
             String url = config.defaultUrl;
 
             if (!chain.url.isEmpty()) {
                 url = chain.url;
             }
 
-            BlockchainMeta obj = new BlockchainMeta(
+            Blockchain obj = new Blockchain(
                     chain.name, chain.id, url, parseAddress(chain.gatewayAddress)
             );
             mBlockchains.put(chain.id, obj);
         }
 
-        for (Configuration.Coin coin : config.coins) {
-            for (Configuration.Coin.Blockchain chain : coin.blockchains) {
-                BlockchainMeta blockchain = mBlockchains.get(chain.id);
+        for (CoinConfig coin : config.coins) {
+            for (CoinConfig.Blockchain chain: coin.blockchains) {
+                Blockchain blockchain = mBlockchains.get(chain.id);
 
                 CoinMeta obj = new CoinMeta(
                         coin.name, coin.fullName, coin.decimals,
@@ -74,12 +77,12 @@ public class CryptoSupport {
         return mCoinMetas.toArray(new CoinMeta[0]);
     }
 
-    public BlockchainMeta[] getBlockchains() {
+    public Blockchain[] getBlockchains() {
         if (!mInitialized)  {
             log.info("CryptoSupport isn't initialized");
             return null;
         }
 
-        return mBlockchains.values().toArray(new BlockchainMeta[0]);
+        return mBlockchains.values().toArray(new Blockchain[0]);
     }
 }

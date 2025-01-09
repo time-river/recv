@@ -30,13 +30,18 @@ import tech.yobit.web3.types.*;
 public class WalletContract {
     private static final Logger log = LoggerFactory.getLogger(WalletContract.class);
 
-    private final BlockchainMeta mBlockchain;
+    private final Blockchain mBlockchain;
     private final ContractAddress mWalletAddress;
     private final Web3j mWeb3j;
+    private final String mUid;
+    private final GatewayContract mGatewayContract;
     private final Wallet mWalletContract;
     private final List<CoinMeta> mCoinMetas = new ArrayList<>();
 
-    public WalletContract(Address walletAddress, BlockchainMeta blockchain, Credentials credentials)  {
+    public WalletContract(Address walletAddress, Blockchain blockchain,
+                          Credentials credentials, String uid, GatewayContract gatewayContract)   {
+        mUid = uid;
+        mGatewayContract = gatewayContract;
         mBlockchain = blockchain;
         mWalletAddress = new ContractAddress(blockchain.id, walletAddress);
 
@@ -54,6 +59,16 @@ public class WalletContract {
 
     public ContractAddress getWalletAddress() {
         return mWalletAddress;
+    }
+
+    public boolean initialize() throws Exception {
+        ContractAddress address = mGatewayContract.checkAndCreateWallet(mUid);
+        if (address != null && address.equals(mWalletAddress)) {
+            return true;
+        }
+
+        log.error("Wallet address {} should be {}", address.toHex(), mWalletAddress.toHex());
+        return false;
     }
 
     public boolean updateCoinMeta(CoinMeta coinMeta) {

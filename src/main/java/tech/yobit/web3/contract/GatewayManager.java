@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tech.yobit.web3.types.Address;
-import tech.yobit.web3.types.BlockchainMeta;
+import tech.yobit.web3.types.Blockchain;
 
 /**
  *  one private key controls all gateway contract
@@ -17,18 +17,18 @@ public class GatewayManager {
     private static final Logger log = LoggerFactory.getLogger(GatewayManager.class);
 
     private final String mPrivateKey;
-    private final List<BlockchainMeta> mBlockchains = new ArrayList<>();
+    private final List<Blockchain> mBlockchains = new ArrayList<>();
     private final HashMap<Integer, GatewayContract> mGatewayContracts = new HashMap<>();
 
-    public GatewayManager(String privateKey, BlockchainMeta[] blockchains) {
+    public GatewayManager(String privateKey, Blockchain[] blockchains) {
         mPrivateKey = privateKey;
         mBlockchains.addAll(List.of(blockchains));
     }
 
     public boolean updateGatewayContract(int blockchainId, Address address) {
-        BlockchainMeta blockchain = null;
+        Blockchain blockchain = null;
 
-        for (BlockchainMeta chain : mBlockchains) {
+        for (Blockchain chain : mBlockchains) {
             if (chain.id == blockchainId) {
                 blockchain = chain;
                 break;
