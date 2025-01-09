@@ -15,6 +15,7 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -109,7 +110,7 @@ public class WalletContract {
 
         String rc = mWeb3j.ethCall(
                 Transaction.createEthCallTransaction(
-                        mAddress.toHex(), coinContractAddress.toHex(), encodedFunc
+                        "0x0", coinContractAddress.toHex(), encodedFunc
                 ),
                 DefaultBlockParameterName.LATEST
         ).send().getValue();
@@ -127,19 +128,27 @@ public class WalletContract {
                 to.toHex(), coin.parseUnits(), coin.contractAddress.toHex()
         ).send();
 
+        String txId = tx.getTransactionHash();
         log.info("Wallet {} withdraw {}({}) to {}, txId {}, status {}, gas used {}",
                 mAddress.toHex(), coin.formatUnits(), coin.parseUnits(), to.toHex(),
-                tx.getTransactionHash(), tx.isStatusOK(), tx.getGasUsed()
+                txId, tx.isStatusOK(), tx.getGasUsed()
         );
 
-        if (tx.isStatusOK()) {
-            return tx.getTransactionHash();
-        } else {
+        if (!tx.isStatusOK()) {
             log.error("Wallet {} withdraw failed, txId {}, msg:\n{}",
-                    mAddress.toHex(), tx.getTransactionHash(), tx.getLogs());
-
+                        mAddress.toHex(), txId, tx.getLogs());
             return null;
         }
+
+        // ensure transaction success
+        // TODO: redo if not success
+        EthTransaction rc = mWeb3j.ethGetTransactionByHash(txId).send();
+        if (rc.getTransaction().isEmpty()) {
+            log.error("Transaction {} isn't present", txId);
+            return null;
+        }
+
+        return txId;
     }
 
     public String withdraw(Address to, BigInteger amount, Address coinContractAddress) throws Exception {
