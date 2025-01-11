@@ -2,20 +2,21 @@ package tech.yobit.web3.types;
 
 import java.math.BigInteger;
 
-public class CoinMeta {
+public class ERC20Meta {
     public final String name;
     public final String fullName;
     public final int decimals;
     public final ContractAddress contractAddress;
 
-    public CoinMeta(String name, String fullName, int decimals,
-                    int blockchainId, Address coinContractAddress) {
+    public ERC20Meta(String name, String fullName, int decimals,
+                     long blockchainId, Address coinContractAddress) {
         this.contractAddress = new ContractAddress(blockchainId, coinContractAddress);
         this.name = name;
         this.fullName = fullName;
         this.decimals = decimals;
     }
 
+    // TODO: check
     public BigInteger parseUnits(String value) {
         if (!value.matches("^(-?)([0-9]*)\\.?([0-9]*)$")) {
             throw new IllegalArgumentException("Invalid decimal number: " + value);
@@ -46,7 +47,7 @@ public class CoinMeta {
 
             long rounded = Math.round(Double.parseDouble(unit + "." + right));
             if (rounded > 9) {
-                fraction = new BigInteger(left).add(BigInteger.ONE).toString() + "0";
+                fraction = new BigInteger(left).add(BigInteger.ONE) + "0";
                 fraction = fraction.substring(fraction.length() - decimals);
             } else {
                 fraction = left + rounded;
@@ -65,6 +66,7 @@ public class CoinMeta {
         return new BigInteger((negative ? "-" : "") + integer + fraction);
     }
 
+    // TODO: check
     public String formatUnits(BigInteger value) {
         String display = value.toString();
 

@@ -1,7 +1,5 @@
 package tech.yobit.web3;
 
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.config.BlockchainConfig;
@@ -9,14 +7,19 @@ import tech.yobit.web3.config.CoinConfig;
 import tech.yobit.web3.config.Configuration;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.Blockchain;
+import tech.yobit.web3.types.ERC20Meta;
 import tech.yobit.web3.utils.Base58;
-import tech.yobit.web3.types.CoinMeta;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class CryptoSupport {
     private static final Logger log = LoggerFactory.getLogger(CryptoSupport.class);
 
-    private final Map<Integer, Blockchain> mBlockchains = new HashMap<>();
-    private final Set<CoinMeta> mCoinMetas = new HashSet<>();
+    private final Map<Long, Blockchain> mBlockchains = new HashMap<>();
+    private final Set<ERC20Meta> mCoinMetas = new HashSet<>();
 
     public CryptoSupport(Configuration config) {
         for (BlockchainConfig chain : config.blockchains) {
@@ -33,10 +36,10 @@ public class CryptoSupport {
         }
 
         for (CoinConfig coin : config.coins) {
-            for (CoinConfig.Blockchain chain: coin.blockchains) {
+            for (CoinConfig.Blockchain chain : coin.blockchains) {
                 Blockchain blockchain = mBlockchains.get(chain.id);
 
-                CoinMeta obj = new CoinMeta(
+                ERC20Meta obj = new ERC20Meta(
                         coin.name, coin.fullName, coin.decimals,
                         blockchain.id, parseAddress(chain.coinContractAddress)
                 );
@@ -61,8 +64,8 @@ public class CryptoSupport {
         return address;
     }
 
-    public CoinMeta[] getCoinMetas() {
-        return mCoinMetas.toArray(new CoinMeta[0]);
+    public ERC20Meta[] getCoinMetas() {
+        return mCoinMetas.toArray(new ERC20Meta[0]);
     }
 
     public Blockchain[] getBlockchains() {

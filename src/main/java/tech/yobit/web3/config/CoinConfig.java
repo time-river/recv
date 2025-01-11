@@ -7,7 +7,7 @@ public class CoinConfig {
     public Blockchain[] blockchains;
 
     static public class Blockchain {
-        public int id;
+        public long id;
         public String coinContractAddress;
     }
 }

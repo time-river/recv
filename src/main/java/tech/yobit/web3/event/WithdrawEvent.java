@@ -2,59 +2,71 @@ package tech.yobit.web3.event;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import tech.yobit.web3.contract.WalletContract;
 import tech.yobit.web3.types.Address;
-import tech.yobit.web3.types.Coin;
 
 import java.math.BigInteger;
 
 /**
- * - monitor crypto coin balance
- * - withdraw it if the balance is enough
+ * - try to withdraw coin
+ * - retry in the future if failure
  */
 public class WithdrawEvent implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(WithdrawEvent.class);
 
     private final WalletContract mWalletContract;
-    private final Coin mCoin;
     private final Address mTo;
+    private final Address mCoinAddress;
     private final Callback mCallback;
-    private final int mTimeoutMs;
 
-    // resolve, reject
-
-    public WithdrawEvent(WalletContract walletContract,
-                         Coin coin, Address to, Callback callback,
-                         int timeoutMs) {
-        if (coin.value.compareTo(BigInteger.ZERO) <= 0) {
-            throw new IllegalArgumentException("coin value must be greater than zero");
-        }
-
+    public WithdrawEvent(WalletContract walletContract, Address to, Address coinAddress, Callback callback) {
         mWalletContract = walletContract;
-        mCoin = coin;
         mTo = to;
+        mCoinAddress = coinAddress;
         mCallback = callback;
-        mTimeoutMs = timeoutMs;
     }
 
     @Override
     public void run() {
-        try {
-            if (!mWalletContract.initialize()) {
-                mCallback.reject(null);
-            }
+        Result rc = new Result(-1, mWalletContract, mTo, mCoinAddress);
 
-            String txId = mWalletContract.withdraw(mTo, mCoin);
-            if (txId == null) {
-                mCallback.reject(new Coin[]{mCoin});
-            } else {
-                mCallback.resolve(new Object[]{txId, mCoin});
+        try {
+            if (mWalletContract.initialize()) {
+                BigInteger amount = mWalletContract.getCoinBalance(mCoinAddress);
+                String txId = mWalletContract.withdraw(mTo, amount, mCoinAddress);
+
+                if (txId != null) {
+                    rc.status = 0;
+                    rc.txId = txId;
+                    rc.amount = amount;
+
+                    mCallback.resolve(new Result[]{ rc });
+                }
+
+                rc.message = "No transaction id";
             }
         } catch (Exception e) {
-            log.error("withdraw Error", e);
+            log.warn("withdraw Error", e);
+            rc.message = String.format("withdraw error: %s", e.getMessage());
+        }
 
-            mCallback.reject(new Coin[]{mCoin});
+        mCallback.reject(new Result[]{ rc });
+    }
+
+    static public class Result {
+        public int status;
+        public String message;
+        public final WalletContract walletContract;
+        public final Address to;
+        public final Address coinAddress;
+        public String txId;
+        public BigInteger amount;
+
+        public Result(int status, WalletContract walletContract, Address to, Address coinAddress) {
+            this.status = status;
+            this.walletContract = walletContract;
+            this.to = to;
+            this.coinAddress = coinAddress;
         }
     }
 }

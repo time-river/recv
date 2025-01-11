@@ -1,10 +1,5 @@
 package tech.yobit.web3.contract;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
@@ -15,14 +10,18 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
-import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
-import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
-
 import tech.yobit.generated.wallet.Wallet;
+import tech.yobit.web3.transaction.ERC20TransferEvent;
 import tech.yobit.web3.types.*;
+import tech.yobit.web3.utils.Constant;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 1. one blockchain has one wallet
@@ -38,28 +37,35 @@ public class WalletContract {
     private final ContractAddress mAddress;
     private final GatewayContract mGatewayContract;
     private final Wallet mWalletContract;
-    private final List<CoinMeta> mCoinMetas = new ArrayList<>();
+    private final List<ERC20Meta> mCoinMetas = new ArrayList<>();
 
     public WalletContract(Address walletAddress, Blockchain blockchain,
-                          Credentials credentials, String uid, GatewayContract gatewayContract)   {
+                          Credentials credentials, String uid, GatewayContract gatewayContract) {
         mUid = uid;
         mGatewayContract = gatewayContract;
         mBlockchain = blockchain;
         mAddress = new ContractAddress(blockchain.id, walletAddress);
 
         mWeb3j = Web3j.build(new HttpService(blockchain.url));
-
-        // TODO: fix gas limit
         mWalletContract = Wallet.load(
                 walletAddress.toHex(),
-                mWeb3j, credentials, new DefaultGasProvider()
+                mWeb3j, credentials, new GasProvider(blockchain.id, blockchain.url)
         );
 
         log.info("Wallet {} connected to {}({}) network",
                 walletAddress.toHex(), blockchain.name, blockchain.id);
     }
 
-    public ContractAddress getWalletAddress() {
+    public WalletContract(Address walletAddress, Blockchain blockchain,
+                          ERC20Meta[] coinMetas, Credentials credentials, String uid, GatewayContract gatewayContract) {
+        this(walletAddress, blockchain, credentials, walletAddress.toHex(), gatewayContract);
+
+        for (ERC20Meta coinMeta : coinMetas) {
+            updateCoinMeta(coinMeta);
+        }
+    }
+
+    public ContractAddress getContractAddress() {
         return mAddress;
     }
 
@@ -68,25 +74,25 @@ public class WalletContract {
         return address != null;
     }
 
-    public boolean updateCoinMeta(CoinMeta coinMeta) {
+    public void updateCoinMeta(ERC20Meta coinMeta) {
         if (coinMeta.contractAddress.blockchainId != mBlockchain.id) {
             log.warn("Coin contract address blockchain id {} mismatch, should be {}",
                     coinMeta.contractAddress.blockchainId, mBlockchain.id);
-            return false;
+            return;
         }
 
-        for (CoinMeta mCoinMeta : mCoinMetas) {
+        for (ERC20Meta mCoinMeta : mCoinMetas) {
             if (mCoinMeta.contractAddress.equals(coinMeta.contractAddress)) {
                 log.warn("Coin {}({}) already exists", coinMeta.name, coinMeta.contractAddress.toHex());
-                return false;
+                return;
             }
         }
 
-        return mCoinMetas.add(coinMeta);
+        mCoinMetas.add(coinMeta);
     }
 
-    private CoinMeta findCoinMeta(Address address) {
-        for (CoinMeta val : mCoinMetas) {
+    public ERC20Meta findCoinMeta(Address address) {
+        for (ERC20Meta val : mCoinMetas) {
             if (val.contractAddress.equals(address)) {
                 return val;
             }
@@ -95,34 +101,38 @@ public class WalletContract {
         return null;
     }
 
-    public Coin getCoinBalance(Address coinContractAddress) throws Exception {
-        CoinMeta coinMeta = findCoinMeta(coinContractAddress);
+    public BigInteger getCoinBalance(Address coinContractAddress) throws Exception {
+        ERC20Meta coinMeta = findCoinMeta(coinContractAddress);
         if (coinMeta == null) {
             throw new Exception("Unknown coin contract address: " + coinContractAddress.toHex());
         }
 
         Function func = new Function(
                 "balanceOf",
-                Arrays.asList(mAddress),
-                Arrays.asList(new TypeReference<Uint256>() {})
+                Collections.singletonList(mAddress),
+                List.of(new TypeReference<Uint256>() {
+                })
         );
         String encodedFunc = FunctionEncoder.encode(func);
 
         String rc = mWeb3j.ethCall(
                 Transaction.createEthCallTransaction(
-                        "0x0", coinContractAddress.toHex(), encodedFunc
+                        Constant.ZERO_ADDRESS, coinContractAddress.toHex(), encodedFunc
                 ),
                 DefaultBlockParameterName.LATEST
         ).send().getValue();
 
-        Coin coin = new Coin(Numeric.toBigInt(rc), coinMeta);
+        BigInteger amount = Numeric.toBigInt(rc);
         log.info("Wallet {}, {}({}) balance {} in {}({}))",
                 mAddress.toHex(), coinMeta.name, coinMeta.contractAddress.toHex(),
-                    coin.formatUnits(), mBlockchain.name, mBlockchain.id);
+                coinMeta.formatUnits(amount), mBlockchain.name, mBlockchain.id);
 
-        return coin;
+        return amount;
     }
 
+    /**
+     * the transaction will be received by blockchain, but **not ensure complete**
+     */
     public String withdraw(Address to, Coin coin) throws Exception {
         TransactionReceipt tx = mWalletContract.withdraw(
                 to.toHex(), coin.parseUnits(), coin.contractAddress.toHex()
@@ -136,15 +146,7 @@ public class WalletContract {
 
         if (!tx.isStatusOK()) {
             log.error("Wallet {} withdraw failed, txId {}, msg:\n{}",
-                        mAddress.toHex(), txId, tx.getLogs());
-            return null;
-        }
-
-        // ensure transaction success
-        // TODO: redo if not success
-        EthTransaction rc = mWeb3j.ethGetTransactionByHash(txId).send();
-        if (rc.getTransaction().isEmpty()) {
-            log.error("Transaction {} isn't present", txId);
+                    mAddress.toHex(), txId, tx.getLogs());
             return null;
         }
 
@@ -152,7 +154,7 @@ public class WalletContract {
     }
 
     public String withdraw(Address to, BigInteger amount, Address coinContractAddress) throws Exception {
-        CoinMeta coinMeta = findCoinMeta(coinContractAddress);
+        ERC20Meta coinMeta = findCoinMeta(coinContractAddress);
         if (coinMeta == null) {
             throw new Exception("Unknown coin contract address: " + coinContractAddress.toHex());
         }
@@ -162,7 +164,7 @@ public class WalletContract {
     }
 
     public String withdraw(Address to, String amount, Address coinContractAddress) throws Exception {
-        CoinMeta coinMeta = findCoinMeta(coinContractAddress);
+        ERC20Meta coinMeta = findCoinMeta(coinContractAddress);
         if (coinMeta == null) {
             throw new Exception("Unknown coin contract address: " + coinContractAddress.toHex());
         }

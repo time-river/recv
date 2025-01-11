@@ -1,19 +1,19 @@
 package tech.yobit.web3.types;
 
 public class ContractAddress extends Address {
-    public final int blockchainId;
+    public final long blockchainId;
 
-    public ContractAddress(int blockchainId, Address address)  {
+    public ContractAddress(long blockchainId, Address address) {
         super(address);
         this.blockchainId = blockchainId;
     }
 
-    public ContractAddress(int blockchainId, String address) {
+    public ContractAddress(long blockchainId, String address) {
         super(address);
         this.blockchainId = blockchainId;
     }
 
-    public ContractAddress(int blockchainId, byte[] address) {
+    public ContractAddress(long blockchainId, byte[] address) {
         super(address);
         this.blockchainId = blockchainId;
     }

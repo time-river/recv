@@ -1,10 +1,12 @@
 package tech.yobit.web3.event;
 
-import java.lang.Runnable;
-import java.util.concurrent.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 public class EventLoop {
     private static final Logger log = LoggerFactory.getLogger(EventLoop.class);
@@ -51,9 +53,9 @@ public class EventLoop {
 
         mExecutorService.shutdown();
         try {
-            if (!mExecutorService.awaitTermination(3, TimeUnit.SECONDS)) {
+            if (!mExecutorService.awaitTermination(60, TimeUnit.SECONDS)) {
                 mExecutorService.shutdownNow();
-                if (!mExecutorService.awaitTermination(3, TimeUnit.SECONDS)) {
+                if (!mExecutorService.awaitTermination(60, TimeUnit.SECONDS)) {
                     log.error("EventLoop did not terminate");
                 }
             }
