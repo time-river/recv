@@ -32,7 +32,7 @@ public class GatewayContract {
 
     // don't need to record WalletContract own to it maybe unlimited
 
-    public GatewayContract(Credentials credentials, Blockchain blockchain) {
+    protected GatewayContract(Credentials credentials, Blockchain blockchain) {
         mBlockchain = blockchain;
         mOwnerAddress = Address.fromHex(credentials.getAddress());
 
@@ -135,7 +135,7 @@ public class GatewayContract {
         return null;
     }
 
-    public WalletContract getWalletContract(Address address, ERC20Meta[] coinMetas, String uid, Credentials credentials) {
+    protected WalletContract getWalletContract(Address address, ERC20Meta[] coinMetas, String uid, Credentials credentials) {
         return new WalletContract(address, mBlockchain, coinMetas, credentials, uid, this);
     }
 }

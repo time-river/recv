@@ -1,5 +1,8 @@
 package tech.yobit.web3.types;
 
+import io.reactivex.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+
 import java.math.BigInteger;
 
 public class ERC20Meta {
@@ -16,8 +19,7 @@ public class ERC20Meta {
         this.decimals = decimals;
     }
 
-    // TODO: check
-    public BigInteger parseUnits(String value) {
+    public static BigInteger parseUnits(String value, int decimals) {
         if (!value.matches("^(-?)([0-9]*)\\.?([0-9]*)$")) {
             throw new IllegalArgumentException("Invalid decimal number: " + value);
         }
@@ -35,15 +37,15 @@ public class ERC20Meta {
         fraction = fraction.replaceAll("0+$", "");
 
         // round off if the fraction is larger than the number of decimals.
-        if (this.decimals == 0) {
+        if (decimals == 0) {
             if (Math.round(Double.parseDouble("." + fraction)) == 1) {
                 integer = new BigInteger(integer).add(BigInteger.ONE).toString();
             }
             fraction = "";
-        } else if (fraction.length() > this.decimals) {
-            String left = fraction.substring(0, this.decimals - 1);
-            String unit = fraction.substring(this.decimals - 1, this.decimals);
-            String right = fraction.substring(this.decimals);
+        } else if (fraction.length() > decimals) {
+            String left = fraction.substring(0, decimals - 1);
+            String unit = fraction.substring(decimals - 1, decimals);
+            String right = fraction.substring(decimals);
 
             long rounded = Math.round(Double.parseDouble(unit + "." + right));
             if (rounded > 9) {
@@ -53,21 +55,25 @@ public class ERC20Meta {
                 fraction = left + rounded;
             }
 
-            if (fraction.length() > this.decimals) {
+            if (fraction.length() > decimals) {
                 fraction = fraction.substring(1);
                 integer = new BigInteger(integer).add(BigInteger.ONE).toString();
             }
 
-            fraction = fraction.substring(0, this.decimals);
+            fraction = fraction.substring(0, decimals);
         } else {
-            fraction = fraction + "0".repeat(this.decimals - fraction.length());
+            fraction = fraction + "0".repeat(decimals - fraction.length());
         }
 
         return new BigInteger((negative ? "-" : "") + integer + fraction);
     }
 
-    // TODO: check
-    public String formatUnits(BigInteger value) {
+    public BigInteger parseUnits(String value) {
+        return parseUnits(value, this.decimals);
+    }
+
+    @NotNull
+    public static String formatUnits(BigInteger value, int decimals)  {
         String display = value.toString();
 
         boolean negative = display.startsWith("-");
@@ -75,16 +81,21 @@ public class ERC20Meta {
             display = display.substring(1);
         }
 
-        if (this.decimals > display.length()) {
-            int padLength = this.decimals - display.length();
+        if (decimals >= display.length()) {
+            int padLength = decimals - display.length();
             display = "0".repeat(padLength) + display;
         }
 
-        String integer = display.length() > this.decimals ? display.substring(0, display.length() - this.decimals) : "0";
-        String fraction = display.length() > this.decimals ? display.substring(display.length() - this.decimals) : "";
+        String integer = display.length() > decimals ? display.substring(0, display.length() - decimals) : "0";
+        String fraction = display.length() > decimals ? display.substring(display.length() - decimals) : display;
 
         fraction = fraction.replaceAll("0+$", "");
 
         return (negative ? "-" : "") + integer + (fraction.isEmpty() ? "" : "." + fraction);
+    }
+
+    @NotNull
+    public String formatUnits(BigInteger value) {
+        return formatUnits(value, this.decimals);
     }
 }

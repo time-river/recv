@@ -14,7 +14,6 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
 import tech.yobit.generated.wallet.Wallet;
-import tech.yobit.web3.transaction.ERC20TransferEvent;
 import tech.yobit.web3.types.*;
 import tech.yobit.web3.utils.Constant;
 
@@ -39,7 +38,7 @@ public class WalletContract {
     private final Wallet mWalletContract;
     private final List<ERC20Meta> mCoinMetas = new ArrayList<>();
 
-    public WalletContract(Address walletAddress, Blockchain blockchain,
+    protected WalletContract(Address walletAddress, Blockchain blockchain,
                           Credentials credentials, String uid, GatewayContract gatewayContract) {
         mUid = uid;
         mGatewayContract = gatewayContract;
@@ -56,9 +55,10 @@ public class WalletContract {
                 walletAddress.toHex(), blockchain.name, blockchain.id);
     }
 
-    public WalletContract(Address walletAddress, Blockchain blockchain,
-                          ERC20Meta[] coinMetas, Credentials credentials, String uid, GatewayContract gatewayContract) {
-        this(walletAddress, blockchain, credentials, walletAddress.toHex(), gatewayContract);
+    protected WalletContract(Address walletAddress, Blockchain blockchain,
+                             ERC20Meta[] coinMetas, Credentials credentials, String uid,
+                             GatewayContract gatewayContract) {
+        this(walletAddress, blockchain, credentials, uid, gatewayContract);
 
         for (ERC20Meta coinMeta : coinMetas) {
             updateCoinMeta(coinMeta);

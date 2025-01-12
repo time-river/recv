@@ -19,7 +19,7 @@ public class CryptoSupport {
     private static final Logger log = LoggerFactory.getLogger(CryptoSupport.class);
 
     private final Map<Long, Blockchain> mBlockchains = new HashMap<>();
-    private final Set<ERC20Meta> mCoinMetas = new HashSet<>();
+    private final Set<ERC20Meta> mERC20Metas = new HashSet<>();
 
     public CryptoSupport(Configuration config) {
         for (BlockchainConfig chain : config.blockchains) {
@@ -44,12 +44,12 @@ public class CryptoSupport {
                         blockchain.id, parseAddress(chain.coinContractAddress)
                 );
 
-                mCoinMetas.add(obj);
+                mERC20Metas.add(obj);
             }
         }
 
         log.info("CryptoSupport initialized {} coins, {} blockchains",
-                mCoinMetas.size(), mBlockchains.size());
+                mERC20Metas.size(), mBlockchains.size());
     }
 
     private Address parseAddress(String str) {
@@ -64,8 +64,8 @@ public class CryptoSupport {
         return address;
     }
 
-    public ERC20Meta[] getCoinMetas() {
-        return mCoinMetas.toArray(new ERC20Meta[0]);
+    public ERC20Meta[] getERC20Metas() {
+        return mERC20Metas.toArray(new ERC20Meta[0]);
     }
 
     public Blockchain[] getBlockchains() {
