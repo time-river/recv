@@ -1,5 +1,7 @@
 package tech.yobit.web3.contract;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.crypto.Credentials;
@@ -23,7 +25,7 @@ public class GatewayManager {
     private final List<Blockchain> mBlockchains = new ArrayList<>();
     private final HashMap<Long, GatewayContract> mGatewayContracts = new HashMap<>();
 
-    public GatewayManager(String privateKey, Blockchain[] blockchains, ERC20Meta[] coinMetas) throws RuntimeException {
+    public GatewayManager(@NotNull String privateKey, @NotNull Blockchain[] blockchains, @NotNull ERC20Meta[] coinMetas) throws RuntimeException {
         if (!GasProvider.isInitialized()) {
             throw new RuntimeException("GasProvider not initialized");
         }
@@ -45,15 +47,18 @@ public class GatewayManager {
         }
     }
 
+    @NotNull
     public Blockchain[] getSupportedBlockchainTypes() {
         return mBlockchains.toArray(new Blockchain[0]);
     }
 
+    @Nullable
     public GatewayContract findGatewayContract(long blockchainId) {
         return mGatewayContracts.get(blockchainId);
     }
 
-    public WalletContract getWalletContract(long blockchainId, Address address) throws Exception {
+    @Nullable
+    public WalletContract getWalletContract(long blockchainId, @NotNull Address address) {
         GatewayContract gatewayContract = findGatewayContract(blockchainId);
         if (gatewayContract == null) {
             return null;

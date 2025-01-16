@@ -1,5 +1,6 @@
 package tech.yobit.web3.contract;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
@@ -39,22 +40,25 @@ public class GatewayContract {
     private final ERC20Meta[] mCoinMetas;
     private final Map<Address, WalletContract> mWalletContracts = new HashMap<>();
 
-    protected GatewayContract(Credentials credentials, Blockchain blockchain, ERC20Meta[] coinMetas) {
+    protected GatewayContract(@NotNull Credentials credentials, @NotNull Blockchain blockchain, @NotNull ERC20Meta[] coinMetas) {
         mCredentials = credentials;
         mBlockchain = blockchain;
         mCoinMetas = coinMetas;
     }
 
-    private byte[] generateSalt(String salt) {
+    @NotNull
+    private byte[] generateSalt(@NotNull String salt) {
         byte[] bytes = salt.getBytes();
         return Hash.sha256(bytes);
     }
 
+    @NotNull
     private String generateInitCode() {
         return Wallet.BINARY + TypeEncoder.encode(Address.fromHex(mCredentials.getAddress()));
     }
 
-    private ContractAddress predictWalletAddress(byte[] salt) {
+    @NotNull
+    private ContractAddress predictWalletAddress(@NotNull byte[] salt) {
         String initCode = generateInitCode();
 
         byte[] address = ContractUtils.generateCreate2ContractAddress(
@@ -63,12 +67,13 @@ public class GatewayContract {
         return new ContractAddress(mBlockchain.id, address);
     }
 
-    public ContractAddress predictWalletAddress(String uid) {
+    @NotNull
+    public ContractAddress predictWalletAddress(@NotNull String uid) {
         byte[] salt = generateSalt(uid);
         return predictWalletAddress(salt);
     }
 
-    public boolean checkWalletAddress(Address address) throws Exception {
+    public boolean checkWalletAddress(@NotNull Address address) throws Exception {
         Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
         Gateway contract = Gateway.load(
                 mBlockchain.gatewayAddress.toHex(),
@@ -79,7 +84,8 @@ public class GatewayContract {
         return contract.wallets(address.toHex()).send();
     }
 
-    private String buildCreateWalletTransactionData(byte[] salt) {
+    @NotNull
+    private String buildCreateWalletTransactionData(@NotNull byte[] salt) {
         Function function = new Function(
                 Gateway.FUNC_CREATEWALLET,
                 Arrays.<Type>asList(new Bytes32(salt)),
@@ -90,15 +96,24 @@ public class GatewayContract {
     }
 
     // salt is 32 bytes length
-    private ContractAddress createWallet(byte[] salt) throws Exception {
+    @NotNull
+    private ContractAddress createWallet(@NotNull byte[] salt) throws Exception {
         Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
         Gateway contract = Gateway.load(
                 mBlockchain.gatewayAddress.toHex(),
                 web3j, mCredentials,
-                new GasProvider(mBlockchain.id, GasProvider.getEstimateGas(mBlockchain.id, buildCreateWalletTransactionData(salt)))
+                new GasProvider(
+                        mBlockchain.id,
+                        GasProvider.getEstimateGas(
+                                mBlockchain.id,
+                                Address.fromHex(mCredentials.getAddress()),
+                                mBlockchain.gatewayAddress,
+                                buildCreateWalletTransactionData(salt)
+                        ))
         );
 
         TransactionReceipt tx = contract.createWallet(salt).send();
+
         log.info("create wallet for {} in {}({}) network, txId {}, status {}, gas used {}",
                 Numeric.toHexString(salt), mBlockchain.name, mBlockchain.id,
                 tx.getTransactionHash(), tx.isStatusOK(), tx.getGasUsed()
@@ -119,7 +134,8 @@ public class GatewayContract {
         return new ContractAddress(mBlockchain.id, address);
     }
 
-    public ContractAddress createWallet(String uid) throws Exception {
+    @NotNull
+    public ContractAddress createWallet(@NotNull String uid) throws Exception {
         byte[] salt = generateSalt(uid);
 
         return createWallet(salt);
@@ -159,7 +175,8 @@ public class GatewayContract {
         return null;
     }
 
-    synchronized protected WalletContract getWalletContract(Address address, Credentials credentials) {
+    @NotNull
+    synchronized protected WalletContract getWalletContract(@NotNull Address address, @NotNull Credentials credentials) {
         if (mWalletContracts.containsKey(address)) {
             return mWalletContracts.get(address);
         } else {

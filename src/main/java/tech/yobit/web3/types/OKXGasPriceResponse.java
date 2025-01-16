@@ -16,6 +16,7 @@ public class OKXGasPriceResponse extends OKXResponse {
         public ERC1559Protocol eip1559Protocol;
     }
 
+    // TODO: use baseFee to adjust price
     static public class ERC1559Protocol {
         public BigInteger suggestBaseFee;
         public BigInteger baseFee;

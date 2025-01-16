@@ -2,11 +2,13 @@ package tech.yobit.web3.gas;
 
 import com.google.gson.Gson;
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.tx.gas.DefaultGasProvider;
 import tech.yobit.web3.config.GasTrackerConfig;
 import tech.yobit.web3.config.OKXGasTrackerConfig;
+import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.GasTracker;
 import tech.yobit.web3.types.OKXGasLimitRequest;
 import tech.yobit.web3.types.OKXGasLimitResponse;
@@ -62,6 +64,7 @@ public class OKXGasTrackerProvider implements GasTrackerProvider {
         return Instant.now().atZone(ZoneId.of("UTC")).format(formatter);
     }
 
+    @NotNull
     @Override
     public GasTracker getGasTracker(long blockchainId) {
         String path = "/api/v5/wallet/pre-transaction/gas-price?chainIndex=" + blockchainId;
@@ -105,19 +108,21 @@ public class OKXGasTrackerProvider implements GasTrackerProvider {
         return tracker;
     }
 
-    private String createGasLimitRequestBody(long blockchainId, String extJson) {
+    @NotNull
+    private String createGasLimitRequestBody(long blockchainId, @NotNull Address from, @NotNull Address to, @NotNull String extJson) {
         OKXGasLimitRequest form = new OKXGasLimitRequest();
         form.chainIndex = String.valueOf(blockchainId);
-        form.fromAddr = Constant.ZERO_ADDRESS;
-        form.toAddr = Constant.ZERO_ADDRESS;
+        form.fromAddr = from.toHex();
+        form.toAddr = to.toHex();
+        form.extJson = new OKXGasLimitRequest.ExtJSON();
         form.extJson.inputData = extJson;
 
         return new Gson().toJson(form);
-
     }
 
     @Override
-    public BigInteger estimateGas(long blockchainId, String data) {
+    @NotNull
+    public BigInteger estimateGas(long blockchainId, @NotNull Address from, @NotNull Address to, @NotNull String data) {
         String path = "/api/v5/wallet/pre-transaction/gas-limit";
 
         OkHttpClient client = new OkHttpClient().newBuilder()
@@ -126,7 +131,7 @@ public class OKXGasTrackerProvider implements GasTrackerProvider {
 
         try {
             String timestamp = getNowISOTimestamp();
-            String body = createGasLimitRequestBody(blockchainId, data);
+            String body = createGasLimitRequestBody(blockchainId, from, to, data);
             String signature = generateSignature("POST", path, timestamp, body);
 
             Request request = new Request.Builder()
@@ -145,7 +150,8 @@ public class OKXGasTrackerProvider implements GasTrackerProvider {
                 logger.debug("OKXGasTrackerImpl estimateGas: {}", rawData);
                 OKXGasLimitResponse gasLimit = new Gson().fromJson(rawData, OKXGasLimitResponse.class);
                 // gas limit: the 1.5 times estimation
-                return new BigInteger(gasLimit.data[0].gasLimit).multiply(new BigInteger("1.25"));
+                BigInteger base = new BigInteger(gasLimit.data[0].gasLimit);
+                return base.multiply(new BigInteger("5")).divide(new BigInteger("4"));
             } else if (response.body() != null) {
                 logger.warn("Failed to estimate gas, response: {}", response.body().string());
             } else {

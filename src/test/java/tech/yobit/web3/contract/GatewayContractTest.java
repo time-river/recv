@@ -1,18 +1,19 @@
 package tech.yobit.web3.contract;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.yobit.web3.config.CoinConfig;
 import tech.yobit.web3.config.Configuration;
-import tech.yobit.web3.config.GasTrackerConfig;
-import tech.yobit.web3.config.OKXGasTrackerConfig;
 import tech.yobit.web3.gas.GasProvider;
+import tech.yobit.web3.types.ContractAddress;
 import tech.yobit.web3.utils.SetupTest;
 
+import java.util.UUID;
+
 public class GatewayContractTest {
-    private static Logger logger = LoggerFactory.getLogger(GatewayContractTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(GatewayContractTest.class);
 
     private static Configuration config;
     private static GatewayManager manager;
@@ -38,11 +39,20 @@ public class GatewayContractTest {
     @Test
     public void testPredict() {
         GatewayContract contract = manager.findGatewayContract(11_155_111);
-         //contract.predictWalletAddress("user");
+        Assertions.assertNotNull(contract);
 
-         //contract.checkWalletAddress(null);
-         //contract.createWallet("user");
+        UUID uuid = UUID.randomUUID();
+        ContractAddress address = contract.predictWalletAddress(uuid.toString());
+        logger.info("predict address: {}", address);
+        try {
+            boolean exist = contract.checkWalletAddress(address);
+            Assertions.assertFalse(exist);
 
-//         contract.getWalletContract();
+            ContractAddress walletAddress = contract.createWallet(uuid.toString());
+            logger.info("create address: {}", address);
+            Assertions.assertEquals(address, walletAddress);
+        } catch (Exception e) {
+            Assertions.fail(e);
+        }
     }
 }

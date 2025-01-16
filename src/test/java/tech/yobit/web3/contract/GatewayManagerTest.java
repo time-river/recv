@@ -1,6 +1,5 @@
 package tech.yobit.web3.contract;
 
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,7 @@ import tech.yobit.web3.types.Address;
 import tech.yobit.web3.utils.SetupTest;
 
 public class GatewayManagerTest {
-    private static Logger logger = LoggerFactory.getLogger(GatewayManagerTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(GatewayManagerTest.class);
 
     private static Configuration config;
 
@@ -28,9 +27,9 @@ public class GatewayManagerTest {
     public void testConstructor() {
         try {
             new GatewayManager(
-                config.privateKey,
-                config.getBlockchainTypes(),
-                config.getCoinMetaTypes()
+                    config.privateKey,
+                    config.getBlockchainTypes(),
+                    config.getCoinMetaTypes()
             );
         } catch (Exception e) {
             Assertions.fail(e);
@@ -43,9 +42,9 @@ public class GatewayManagerTest {
 
         try {
             manager = new GatewayManager(
-                config.privateKey,
-                config.getBlockchainTypes(),
-                config.getCoinMetaTypes()
+                    config.privateKey,
+                    config.getBlockchainTypes(),
+                    config.getCoinMetaTypes()
             );
 
             Assertions.assertNull(manager.findGatewayContract(1));
@@ -54,7 +53,7 @@ public class GatewayManagerTest {
 
             Assertions.assertEquals(manager.getSupportedBlockchainTypes().length, config.getBlockchainTypes().length);
 
-            Assertions.assertNull(manager.getWalletContract(1, null));
+            Assertions.assertNull(manager.getWalletContract(1, Address.fromHex("0x43F7b162472bA1bB8967853DB7FE9fbA7589cbdc")));
             Assertions.assertNotNull(manager.getWalletContract(11_155_111,
                     Address.fromString(config.coins[0].blockchains[0].coinContractAddress))
             );

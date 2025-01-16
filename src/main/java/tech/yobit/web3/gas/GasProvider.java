@@ -2,6 +2,7 @@ package tech.yobit.web3.gas;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.tx.gas.ContractEIP1559GasProvider;
@@ -9,6 +10,7 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.generated.wallet.Wallet;
 import tech.yobit.web3.config.GasTrackerConfig;
+import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.GasTracker;
 
 import java.math.BigInteger;
@@ -76,10 +78,10 @@ public class GasProvider implements ContractEIP1559GasProvider {
         mEstimateGas = estimateGas;
     }
 
-    static public BigInteger getEstimateGas(long blockchainId, String data) {
+    static public BigInteger getEstimateGas(long blockchainId, @NotNull Address from, @NotNull Address to, @NotNull String data) {
         for (GasTrackerProvider provider : mGasTrackersProviders) {
             if (provider.isSupported(blockchainId)) {
-                return provider.estimateGas(blockchainId, data);
+                return provider.estimateGas(blockchainId, from, to, data);
             }
         }
 

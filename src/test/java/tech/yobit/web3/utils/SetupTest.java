@@ -1,9 +1,21 @@
 package tech.yobit.web3.utils;
 
+import org.jetbrains.annotations.NotNull;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.Bytes32;
+import org.web3j.utils.Numeric;
+import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.web3.config.*;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 public class SetupTest {
 
+    @NotNull
     public static Configuration buildConfig() {
         Configuration config = new Configuration();
         config.privateKey = System.getenv("PRIVATE_KEY");
@@ -15,6 +27,7 @@ public class SetupTest {
         return config;
     }
 
+    @NotNull
     public static CoinConfig[] setupCoinConfig() {
         CoinConfig sepoliaUSDT = new CoinConfig();
         sepoliaUSDT.name = "USDT";
@@ -41,6 +54,7 @@ public class SetupTest {
         return new CoinConfig[]{sepoliaUSDT};
     }
 
+    @NotNull
     public static BlockchainConfig[] setupBlockchainConfig() {
         BlockchainConfig ethereum = new BlockchainConfig();
         ethereum.name = "Ethereum Sepolia";
@@ -59,6 +73,7 @@ public class SetupTest {
         return new BlockchainConfig[]{ethereum};
     }
 
+    @NotNull
     public static GasTrackerConfig[] setupGasTrackerConfig() {
         OKXGasTrackerConfig okxGasTrackerConfig = new OKXGasTrackerConfig();
         okxGasTrackerConfig.provider = "OKXGasTrackerProvider";
@@ -78,4 +93,5 @@ public class SetupTest {
 
         return new GasTrackerConfig[]{okxGasTrackerConfig};
     }
+
 }
