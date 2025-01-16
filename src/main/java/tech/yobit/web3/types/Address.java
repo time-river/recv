@@ -41,6 +41,17 @@ public class Address extends org.web3j.abi.datatypes.Address {
         return new Address(bytes);
     }
 
+    /**
+     * @param val: hex or base58 string
+     */
+    public static Address fromString(String val) {
+        if (Base58.isValidBase58((val))) {
+            return Address.fromBase58(val);
+        } else {
+            return Address.fromHex(val);
+        }
+    }
+
     public String toHex() {
         return toString();
     }

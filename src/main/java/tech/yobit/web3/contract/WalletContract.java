@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
@@ -14,11 +15,13 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
 import tech.yobit.generated.wallet.Wallet;
+import tech.yobit.web3.gas.GasProvider;
 import tech.yobit.web3.types.*;
 import tech.yobit.web3.utils.Constant;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,36 +32,24 @@ import java.util.List;
 public class WalletContract {
     private static final Logger log = LoggerFactory.getLogger(WalletContract.class);
 
-    private final Web3j mWeb3j;
-    private final String mUid;
-
     private final Blockchain mBlockchain;
     private final ContractAddress mAddress;
-    private final GatewayContract mGatewayContract;
-    private final Wallet mWalletContract;
+    private final Credentials mCredentials;
     private final List<ERC20Meta> mCoinMetas = new ArrayList<>();
 
-    protected WalletContract(Address walletAddress, Blockchain blockchain,
-                          Credentials credentials, String uid, GatewayContract gatewayContract) {
-        mUid = uid;
-        mGatewayContract = gatewayContract;
+    private WalletContract(Address walletAddress, Blockchain blockchain,
+                             Credentials credentials) {
         mBlockchain = blockchain;
         mAddress = new ContractAddress(blockchain.id, walletAddress);
-
-        mWeb3j = Web3j.build(new HttpService(blockchain.url));
-        mWalletContract = Wallet.load(
-                walletAddress.toHex(),
-                mWeb3j, credentials, new GasProvider(blockchain.id, blockchain.url)
-        );
+        mCredentials = credentials;
 
         log.info("Wallet {} connected to {}({}) network",
                 walletAddress.toHex(), blockchain.name, blockchain.id);
     }
 
     protected WalletContract(Address walletAddress, Blockchain blockchain,
-                             ERC20Meta[] coinMetas, Credentials credentials, String uid,
-                             GatewayContract gatewayContract) {
-        this(walletAddress, blockchain, credentials, uid, gatewayContract);
+                             ERC20Meta[] coinMetas, Credentials credentials)  {
+        this(walletAddress, blockchain, credentials);
 
         for (ERC20Meta coinMeta : coinMetas) {
             updateCoinMeta(coinMeta);
@@ -67,11 +58,6 @@ public class WalletContract {
 
     public ContractAddress getContractAddress() {
         return mAddress;
-    }
-
-    public boolean initialize() throws Exception {
-        ContractAddress address = mGatewayContract.checkAndCreateWallet(mUid, mAddress);
-        return address != null;
     }
 
     public void updateCoinMeta(ERC20Meta coinMeta) {
@@ -89,6 +75,10 @@ public class WalletContract {
         }
 
         mCoinMetas.add(coinMeta);
+    }
+
+    public ERC20Meta[] getERC20MetaTypes() {
+        return mCoinMetas.toArray(new ERC20Meta[0]);
     }
 
     public ERC20Meta findCoinMeta(Address address) {
@@ -115,7 +105,8 @@ public class WalletContract {
         );
         String encodedFunc = FunctionEncoder.encode(func);
 
-        String rc = mWeb3j.ethCall(
+        Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
+        String rc = web3j.ethCall(
                 Transaction.createEthCallTransaction(
                         Constant.ZERO_ADDRESS, coinContractAddress.toHex(), encodedFunc
                 ),
@@ -130,11 +121,32 @@ public class WalletContract {
         return amount;
     }
 
+    private String buildWithdrawTransactionData(Address to, BigInteger amount, Address token) {
+        Function function = new Function(
+                Wallet.FUNC_WITHDRAW,
+                Arrays.<Type>asList(
+                        new Address(to),
+                        new Uint256(amount),
+                        new Address(token)
+                ),
+                Collections.<TypeReference<?>>emptyList()
+        );
+
+        return FunctionEncoder.encode(function);
+    }
+
     /**
      * the transaction will be received by blockchain, but **not ensure complete**
      */
     public String withdraw(Address to, Coin coin) throws Exception {
-        TransactionReceipt tx = mWalletContract.withdraw(
+        Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
+        Wallet contract = Wallet.load(
+                mAddress.toHex(),
+                web3j, mCredentials,
+                new GasProvider(mBlockchain.id, GasProvider.getEstimateGas(mBlockchain.id, buildWithdrawTransactionData(to, coin.value, coin.contractAddress)))
+        );
+
+        TransactionReceipt tx = contract.withdraw(
                 to.toHex(), coin.parseUnits(), coin.contractAddress.toHex()
         ).send();
 

@@ -23,14 +23,14 @@ public class CryptoSupport {
 
     public CryptoSupport(Configuration config) {
         for (BlockchainConfig chain : config.blockchains) {
-            String url = config.defaultUrl;
+            String rpcUrl = config.defaultUrl;
 
-            if (chain.url != null && !chain.url.isEmpty()) {
-                url = chain.url;
+            if (chain.rpcUrl != null && !chain.rpcUrl.isEmpty()) {
+                rpcUrl = chain.rpcUrl;
             }
 
             Blockchain obj = new Blockchain(
-                    chain.name, chain.id, url, parseAddress(chain.gatewayAddress)
+                    chain.name, chain.id, rpcUrl, chain.blockExplorerUrl, parseAddress(chain.gatewayAddress)
             );
             mBlockchains.put(chain.id, obj);
         }

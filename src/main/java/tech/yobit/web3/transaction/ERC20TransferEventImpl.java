@@ -35,7 +35,7 @@ public class ERC20TransferEventImpl {
     }
 
     public Result getCompletedTransferEvents(BigInteger fromBlock) throws Exception {
-        return getCompletedTransferEvents(mBlockchain.url, fromBlock, mCoinMeta, mFrom, mTo);
+        return getCompletedTransferEvents(mBlockchain.rpcUrl, fromBlock, mCoinMeta, mFrom, mTo);
     }
 
     /**
