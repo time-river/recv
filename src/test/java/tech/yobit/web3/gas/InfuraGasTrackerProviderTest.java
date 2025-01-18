@@ -1,14 +1,12 @@
 package tech.yobit.web3.gas;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.config.GasTrackerConfig;
-import tech.yobit.web3.config.OKXGasTrackerConfig;
 import tech.yobit.web3.types.BlockchainName;
-import tech.yobit.web3.types.InfuraGasTrackerConfig;
+import tech.yobit.web3.config.InfuraGasTrackerConfig;
 import tech.yobit.web3.utils.SetupTest;
 
 public class InfuraGasTrackerProviderTest {

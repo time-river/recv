@@ -2,7 +2,7 @@ package tech.yobit.web3.utils;
 
 import org.jetbrains.annotations.NotNull;
 import tech.yobit.web3.config.*;
-import tech.yobit.web3.types.InfuraGasTrackerConfig;
+import tech.yobit.web3.config.InfuraGasTrackerConfig;
 
 public class SetupTest {
     public static final String SEPOLIA_WALLET_ADDRESS = System.getenv("SEPOLIA_WALLET_ADDRESS");

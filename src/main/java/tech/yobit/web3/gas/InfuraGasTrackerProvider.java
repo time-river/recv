@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.config.GasTrackerConfig;
+import tech.yobit.web3.config.InfuraGasTrackerConfig;
 import tech.yobit.web3.types.*;
 
 import java.math.BigInteger;
