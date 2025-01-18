@@ -29,7 +29,8 @@ public class GatewayManagerTest {
             new GatewayManager(
                     config.privateKey,
                     config.getBlockchainTypes(),
-                    config.getCoinMetaTypes()
+                    config.getCoinMetaTypes(),
+                    config.getGasTrackerConfigs()
             );
         } catch (Exception e) {
             Assertions.fail(e);
@@ -44,7 +45,8 @@ public class GatewayManagerTest {
             manager = new GatewayManager(
                     config.privateKey,
                     config.getBlockchainTypes(),
-                    config.getCoinMetaTypes()
+                    config.getCoinMetaTypes(),
+                    config.getGasTrackerConfigs()
             );
 
             Assertions.assertNull(manager.findGatewayContract(1));

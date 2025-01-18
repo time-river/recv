@@ -17,6 +17,7 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
 import tech.yobit.generated.wallet.Wallet;
 import tech.yobit.web3.gas.GasProvider;
+import tech.yobit.web3.transaction.ERC20TransferEvent;
 import tech.yobit.web3.types.*;
 import tech.yobit.web3.utils.Constant;
 
@@ -226,5 +227,18 @@ public class WalletContract {
 
         Coin coin = new Coin(amount, coinMeta);
         return withdraw(to, coin);
+    }
+
+    @Nullable
+    public ERC20TransferEventResult getInTransferEvents(BigInteger fromBlock, Address coinContractAddress) throws Exception {
+        ERC20Meta coinMeta = findCoinMeta(coinContractAddress);
+        if (coinMeta == null) {
+            logger.error("Unknown coin contract address {} in getInTransferEvents", coinContractAddress.toHex());
+            return null;
+        }
+
+        return ERC20TransferEvent.getCompletedTransferEvents(
+                mBlockchain.rpcUrl, fromBlock, coinMeta, null, mAddress
+        );
     }
 }

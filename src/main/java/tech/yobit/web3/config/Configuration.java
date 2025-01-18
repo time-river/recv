@@ -78,4 +78,8 @@ public class Configuration {
     public Blockchain[] getBlockchainTypes() {
         return getBlockchains().values().toArray(new Blockchain[0]);
     }
+
+    public GasTrackerConfig[] getGasTrackerConfigs() {
+        return gasTrackers;
+    }
 }

@@ -8,17 +8,13 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.http.HttpService;
-import tech.yobit.web3.types.Address;
-import tech.yobit.web3.types.Blockchain;
-import tech.yobit.web3.types.Coin;
-import tech.yobit.web3.types.ERC20Meta;
+import tech.yobit.web3.types.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -60,9 +56,9 @@ public class ERC20TransferEvent {
         ).addSingleTopic(EventEncoder.encode(event));
     }
 
-    static public Result getCompletedTransferEvents(
+    static public ERC20TransferEventResult getCompletedTransferEvents(
             String url, BigInteger fromBlock, ERC20Meta coinMeta, Address fromAddress, Address toAddress) throws Exception {
-        Result rc = new Result();
+        ERC20TransferEventResult rc = new ERC20TransferEventResult();
         List<tech.yobit.web3.types.ERC20TransferEvent> events = new ArrayList<>();
         EthFilter filter = createEventFilter(fromBlock, coinMeta.contractAddress);
 
@@ -116,23 +112,7 @@ public class ERC20TransferEvent {
         return rc;
     }
 
-    public Result getCompletedTransferEvents(BigInteger fromBlock) throws Exception {
+    public ERC20TransferEventResult getCompletedTransferEvents(BigInteger fromBlock) throws Exception {
         return getCompletedTransferEvents(mBlockchain.rpcUrl, fromBlock, mCoinMeta, mFrom, mTo);
-    }
-
-    static public class Result {
-        public BigInteger blockNumber;
-        public tech.yobit.web3.types.ERC20TransferEvent[] events = new tech.yobit.web3.types.ERC20TransferEvent[0];
-
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-
-            builder.append("blockNumber: ").append(blockNumber.toString());
-            for (tech.yobit.web3.types.ERC20TransferEvent event : events) {
-                builder.append("\n\\-").append(event.toString());
-            }
-
-            return builder.toString();
-        }
     }
 }

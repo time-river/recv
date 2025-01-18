@@ -83,7 +83,7 @@ public class GatewayContract {
     }
 
     @NotNull
-    static private String buildCreateWalletTransactionData(byte[] salt) {
+    private String buildCreateWalletTransactionData(byte[] salt) {
         Function function = new Function(
                 Gateway.FUNC_CREATEWALLET,
                 List.of(new Bytes32(salt)),
@@ -149,40 +149,6 @@ public class GatewayContract {
         byte[] salt = generateSalt(uid);
 
         return createWallet(salt);
-    }
-
-    /*
-     *  1. return wallet address if wallet already exists
-     *  2. create then return wallet address if wallet don't exist
-     */
-    public ContractAddress checkAndCreateWallet(String uid, Address address) throws Exception {
-        byte[] salt = generateSalt(uid);
-        ContractAddress predicted = predictWalletAddress(salt);
-
-        // 1st check
-        if (!address.equals(predicted)) {
-            throw new Exception(String.format(
-                    "uid %s generate wallet address %s not match predict address %s",
-                    uid, address, predicted)
-            );
-        }
-
-        boolean exist = checkWalletAddress(predicted);
-        if (exist) {
-            return predicted;
-        }
-
-        ContractAddress generate = createWallet(salt);
-        // 2nd check
-        if (generate != null && generate.equals(predicted)) {
-            return predicted;
-        } else if (generate != null) {
-            logger.error("predict address {} don't match generated {}",
-                    predicted.toHex(), generate.toHex()
-            );
-        }
-
-        return null;
     }
 
     @NotNull

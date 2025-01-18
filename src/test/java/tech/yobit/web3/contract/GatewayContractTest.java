@@ -31,7 +31,8 @@ public class GatewayContractTest {
             manager = new GatewayManager(
                     config.privateKey,
                     config.getBlockchainTypes(),
-                    config.getCoinMetaTypes()
+                    config.getCoinMetaTypes(),
+                    config.getGasTrackerConfigs()
             );
         } catch (Exception e) {
             logger.error(e.getMessage());

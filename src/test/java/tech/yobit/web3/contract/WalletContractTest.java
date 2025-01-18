@@ -7,10 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.config.Configuration;
 import tech.yobit.web3.gas.GasProvider;
-import tech.yobit.web3.types.Address;
-import tech.yobit.web3.types.Coin;
-import tech.yobit.web3.types.ContractAddress;
-import tech.yobit.web3.types.ERC20Meta;
+import tech.yobit.web3.types.*;
 import tech.yobit.web3.utils.SetupTest;
 
 import java.math.BigInteger;
@@ -34,7 +31,8 @@ public class WalletContractTest {
             manager = new GatewayManager(
                     config.privateKey,
                     config.getBlockchainTypes(),
-                    config.getCoinMetaTypes()
+                    config.getCoinMetaTypes(),
+                    config.getGasTrackerConfigs()
             );
             wallet = manager.getWalletContract(11_155_111, address);
         } catch (Exception e) {
@@ -138,6 +136,17 @@ public class WalletContractTest {
             );
             Assertions.assertNull(wallet.withdraw(wallet.getContractAddress(), fakeCoin.value.toString(), fakeCoin.contractAddress));
 
+        } catch (Exception e) {
+            Assertions.fail(e);
+        }
+    }
+
+    @Test
+    public void testGetInTransferEvents() {
+        ERC20Meta[] coins = wallet.getCoinMetaTypes();
+        try {
+            ERC20TransferEventResult events = wallet.getInTransferEvents(new BigInteger("7502931"), coins[0].contractAddress);
+            logger.info("GetInTransferEvents: {}", events);
         } catch (Exception e) {
             Assertions.fail(e);
         }

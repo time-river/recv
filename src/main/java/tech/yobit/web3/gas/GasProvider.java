@@ -61,6 +61,10 @@ public class GasProvider implements ContractEIP1559GasProvider {
     }
 
     public static void initialize(GasTrackerConfig[] gasTrackerConfigs) {
+        if (mInitialized) {
+            return;
+        }
+
         for (GasTrackerConfig config : gasTrackerConfigs) {
             String name = GasProvider.class.getPackageName() + "." + config.provider;
 

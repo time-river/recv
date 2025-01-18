@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.crypto.Credentials;
+import tech.yobit.web3.config.GasTrackerConfig;
 import tech.yobit.web3.gas.GasProvider;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.Blockchain;
@@ -24,10 +25,11 @@ public class GatewayManager {
     private final List<Blockchain> mBlockchains = new ArrayList<>();
     private final HashMap<Long, GatewayContract> mGatewayContracts = new HashMap<>();
 
-    public GatewayManager(@NotNull String privateKey, @NotNull Blockchain[] blockchains, @NotNull ERC20Meta[] coinMetas) throws RuntimeException {
-        if (!GasProvider.isInitialized()) {
-            throw new RuntimeException("GasProvider not initialized");
-        }
+    public GatewayManager(@NotNull String privateKey,
+                          @NotNull Blockchain[] blockchains,
+                          @NotNull ERC20Meta[] coinMetas,
+                          @NotNull GasTrackerConfig[] gasTrackerConfigs) {
+        GasProvider.initialize(gasTrackerConfigs);
 
         mCredentials = Credentials.create(privateKey);
         logger.info("Credentials loaded, address: {}", mCredentials.getAddress());
