@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.Blockchain;
+import tech.yobit.web3.types.BlockchainName;
 import tech.yobit.web3.types.ERC20Meta;
 
 import java.util.HashMap;
@@ -16,6 +17,8 @@ import java.util.Set;
  * @minimumWithdrawalAmount: 提现最小金额
  */
 public class Configuration {
+    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
+
     public String firstMinimumDepositAmount;
     public String minimumWithdrawalAmount;
     public String privateKey;
@@ -23,9 +26,6 @@ public class Configuration {
     public CoinConfig[] coins;
     public BlockchainConfig[] blockchains;
     public GasTrackerConfig[] gasTrackers;
-
-
-    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     private Map<Long, Blockchain> getBlockchains() {
         Map<Long, Blockchain> blockchains = new HashMap<>();
@@ -37,6 +37,7 @@ public class Configuration {
                 rpcUrl = chain.rpcUrl;
             }
 
+            BlockchainName blockchain = BlockchainName.from(chain.id);
             if (chain.name == null || chain.name.isEmpty()) {
                 logger.warn("blockchain {} name is empty", chain.id);
             } else if (rpcUrl == null || rpcUrl.isEmpty()) {
@@ -48,7 +49,7 @@ public class Configuration {
             }
 
             Blockchain obj = new Blockchain(
-                    chain.name, chain.id, rpcUrl, chain.blockExplorerUrl, Address.fromString(chain.gatewayAddress)
+                    blockchain, rpcUrl, chain.blockExplorerUrl, Address.fromString(chain.gatewayAddress)
             );
 
             blockchains.put(chain.id, obj);
@@ -57,7 +58,7 @@ public class Configuration {
         return blockchains;
     }
 
-    public ERC20Meta[] getCoinMetaTypes() throws  Exception {
+    public ERC20Meta[] getCoinMetaTypes() throws Exception {
         Map<Long, Blockchain> blockchains = getBlockchains();
         Set<ERC20Meta> coins = new HashSet<>();
 
@@ -70,7 +71,7 @@ public class Configuration {
 
                 ERC20Meta obj = new ERC20Meta(
                         coin.name, coin.fullName, coin.decimals,
-                        blockchain.id, Address.fromString(chain.coinContractAddress)
+                        blockchain.getId(), Address.fromString(chain.coinContractAddress)
                 );
 
                 coins.add(obj);

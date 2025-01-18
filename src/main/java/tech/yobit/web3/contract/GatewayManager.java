@@ -5,7 +5,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.crypto.Credentials;
-import org.web3j.tx.gas.ContractGasProvider;
 import tech.yobit.web3.gas.GasProvider;
 import tech.yobit.web3.types.Address;
 import tech.yobit.web3.types.Blockchain;
@@ -36,13 +35,13 @@ public class GatewayManager {
         for (Blockchain chain : blockchains) {
             List<ERC20Meta> coinMetaList = new ArrayList<>();
             for (ERC20Meta coinMeta : coinMetas) {
-                if (coinMeta.contractAddress.blockchainId == chain.id) {
+                if (coinMeta.contractAddress.blockchainId == chain.getId()) {
                     coinMetaList.add(coinMeta);
                 }
             }
 
             GatewayContract contract = new GatewayContract(mCredentials, chain, coinMetaList.toArray(new ERC20Meta[0]));
-            mGatewayContracts.put(chain.id, contract);
+            mGatewayContracts.put(chain.getId(), contract);
             mBlockchains.add(chain);
         }
     }

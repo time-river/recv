@@ -1,15 +1,21 @@
 package tech.yobit.web3.types;
 
 public class BlockchainMeta {
-    public final String name;
-    public final long id;
+    public final BlockchainName chain;
     public final String rpcUrl;
     public final String blockExplorerUrl;
 
-    public BlockchainMeta(String name, long id, String rpcUrl, String blockExplorerUrl) {
-        this.name = name;
-        this.id = id;
+    public BlockchainMeta(BlockchainName chain, String rpcUrl, String blockExplorerUrl) {
+        this.chain = chain;
         this.rpcUrl = rpcUrl;
         this.blockExplorerUrl = blockExplorerUrl;
+    }
+
+    public long getId() {
+        return chain.getId();
+    }
+
+    public String getName() {
+        return chain.toString();
     }
 }

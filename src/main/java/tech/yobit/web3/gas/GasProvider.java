@@ -10,7 +10,7 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.generated.wallet.Wallet;
 import tech.yobit.web3.config.GasTrackerConfig;
-import tech.yobit.web3.types.Address;
+import tech.yobit.web3.types.BlockchainName;
 import tech.yobit.web3.types.GasTracker;
 
 import java.math.BigInteger;
@@ -28,22 +28,37 @@ public class GasProvider implements ContractEIP1559GasProvider {
     private static final Logger logger = LoggerFactory.getLogger(GasProvider.class);
 
     private static final List<GasTrackerProvider> mGasTrackersProviders = new ArrayList<>();
-    private static final LoadingCache<Long, GasTracker> mGasTrackers = Caffeine
-            .newBuilder()
+    private static final LoadingCache<Long, GasTracker> mGasTrackers = Caffeine.newBuilder()
             .expireAfterWrite(15, TimeUnit.SECONDS)
             .build(blockchainId -> {
+                BlockchainName blockchain = BlockchainName.from(blockchainId);
                 for (GasTrackerProvider provider : mGasTrackersProviders) {
-                    if (provider.isSupported(blockchainId)) {
-                        return provider.getGasTracker(blockchainId);
+                    if (provider.isSupported(blockchain)) {
+                        GasTracker tracker = provider.getGasTracker(blockchain);
+                        // retry others when failure
+                        if (tracker != null) {
+                            return tracker;
+                        }
+                        logger.info("{} getGasTracker failure, try next", provider.getName());
                     }
                 }
 
-                return new DefaultGasTrackerProvider().getGasTracker(blockchainId);
+                logger.warn("Failed to get gas tracker for blockchain id {}, use default gas tracker provider", blockchainId);
+                return new DefaultGasTrackerProvider().getGasTracker(blockchain);
             });
-
+    static private boolean mInitialized;
     private final long mBlockchainId;
     private final BigInteger mEstimateGas;
-    static private boolean mInitialized;
+
+    public GasProvider(long blockchainId) {
+        mBlockchainId = blockchainId;
+        mEstimateGas = DefaultGasProvider.GAS_LIMIT;
+    }
+
+    public GasProvider(long blockchainId, BigInteger estimateGas) {
+        mBlockchainId = blockchainId;
+        mEstimateGas = estimateGas;
+    }
 
     public static void initialize(GasTrackerConfig[] gasTrackerConfigs) {
         for (GasTrackerConfig config : gasTrackerConfigs) {
@@ -56,6 +71,7 @@ public class GasProvider implements ContractEIP1559GasProvider {
 
                 GasTrackerProvider instance = (GasTrackerProvider) constructor.newInstance(config);
                 mGasTrackersProviders.add(instance);
+                logger.info("initialize {}", instance.getName());
             } catch (Exception e) {
                 logger.warn("Failed to load gas tracker provider {}, class name {}", config.provider, name, e);
             }
@@ -68,37 +84,39 @@ public class GasProvider implements ContractEIP1559GasProvider {
         return mInitialized;
     }
 
-    public GasProvider(long blockchainId) {
-        mBlockchainId = blockchainId;
-        mEstimateGas = DefaultGasProvider.GAS_LIMIT;
-    }
+    @NotNull
+    static public BigInteger getEstimateGas(BlockchainName blockchain, @NotNull String from, @NotNull String to, @NotNull String data) {
+        BigInteger amount = null;
 
-    public GasProvider(long blockchainId, BigInteger estimateGas) {
-        mBlockchainId = blockchainId;
-        mEstimateGas = estimateGas;
-    }
-
-    static public BigInteger getEstimateGas(long blockchainId, @NotNull Address from, @NotNull Address to, @NotNull String data) {
+        // TODO: optimize
         for (GasTrackerProvider provider : mGasTrackersProviders) {
-            if (provider.isSupported(blockchainId)) {
-                return provider.estimateGas(blockchainId, from, to, data);
+            if (provider.isSupported(blockchain)) {
+                amount = provider.estimateGas(blockchain, from, to, data);
+                // retry others when failure
+                if (amount == null) {
+                    logger.info("{} getEstimateGas failure, try next", provider.getName());
+                } else if (amount.equals(BigInteger.ZERO)) {
+                    return BigInteger.ZERO;
+                } else {
+                    return amount;
+                }
             }
         }
 
-        return DefaultGasProvider.GAS_LIMIT;
+        logger.warn("Failed to get estimate gas for blockchain {}({}), use default gas", blockchain, blockchain.getId());
+        return new DefaultGasTrackerProvider().estimateGas(blockchain, from, to, data);
     }
 
     @Override
     public BigInteger getGasPrice(String contractFunc) {
+        GasTracker tracker = mGasTrackers.get(mBlockchainId);
         if (contractFunc.equals(Gateway.FUNC_CREATEWALLET)) {
-            GasTracker tracker = mGasTrackers.get(mBlockchainId);
-            // contract deploy maybe use high gas, therefore select low price
-            return tracker.minGasPrice;
+            return tracker.normalGasPrice;
         } else if (contractFunc.equals(Wallet.FUNC_WITHDRAW)) {
-            GasTracker tracker = mGasTrackers.get(mBlockchainId);
+            return tracker.normalGasPrice;
+        } else {
             return tracker.normalGasPrice;
         }
-        return getGasPrice();
     }
 
     @Override
@@ -133,12 +151,12 @@ public class GasProvider implements ContractEIP1559GasProvider {
         GasTracker tracker = mGasTrackers.get(mBlockchainId);
 
         if (contractFunc.equals(Gateway.FUNC_CREATEWALLET)) {
-            // contract deploy maybe use high gas, therefore select low price
+            // contract deploy need speed
             return tracker.suggestBaseFee.add(tracker.proposePriorityFee);
         } else if (contractFunc.equals(Wallet.FUNC_WITHDRAW)) {
             return tracker.suggestBaseFee.add(tracker.safePriorityFee);
         } else {
-            return tracker.suggestBaseFee.add(tracker.proposePriorityFee);
+            return tracker.suggestBaseFee.add(tracker.safePriorityFee);
         }
     }
 
@@ -147,12 +165,12 @@ public class GasProvider implements ContractEIP1559GasProvider {
         GasTracker tracker = mGasTrackers.get(mBlockchainId);
 
         if (contractFunc.equals(Gateway.FUNC_CREATEWALLET)) {
-            // contract deploy maybe use high gas, therefore select low price
+            // contract deploy need speed
             return tracker.proposePriorityFee;
         } else if (contractFunc.equals(Wallet.FUNC_WITHDRAW)) {
             return tracker.safePriorityFee;
         } else {
-            return tracker.proposePriorityFee;
+            return tracker.safePriorityFee;
         }
     }
 }

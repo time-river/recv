@@ -14,34 +14,35 @@ import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.http.HttpService;
-import tech.yobit.web3.types.*;
+import tech.yobit.web3.types.Address;
+import tech.yobit.web3.types.Blockchain;
+import tech.yobit.web3.types.Coin;
+import tech.yobit.web3.types.ERC20Meta;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class ERC20TransferEventImpl {
-    private static final Logger logger = LoggerFactory.getLogger(ERC20TransferEventImpl.class);
+public class ERC20TransferEvent {
+    private static final Logger logger = LoggerFactory.getLogger(ERC20TransferEvent.class);
 
     private final Blockchain mBlockchain;
     private final ERC20Meta mCoinMeta;
     private final Address mFrom;
     private final Address mTo;
 
-    public ERC20TransferEventImpl(Blockchain blockchain, ERC20Meta coinMeta, Address from, Address to) {
+    public ERC20TransferEvent(Blockchain blockchain, ERC20Meta coinMeta, Address from, Address to) {
         mBlockchain = blockchain;
         mCoinMeta = coinMeta;
         mFrom = from;
         mTo = to;
     }
 
-    public Result getCompletedTransferEvents(BigInteger fromBlock) throws Exception {
-        return getCompletedTransferEvents(mBlockchain.rpcUrl, fromBlock, mCoinMeta, mFrom, mTo);
-    }
-
     /**
      * `event Transfer(address indexed from, address indexed to, uint256 value)`
      */
-    static private EthFilter createEventFilter(BigInteger fromBlock, Address filterAddress)  {
+    static private EthFilter createEventFilter(BigInteger fromBlock, Address filterAddress) {
         Event event = new Event(
                 "Transfer",
                 Arrays.asList(
@@ -61,7 +62,7 @@ public class ERC20TransferEventImpl {
     static public Result getCompletedTransferEvents(
             String url, BigInteger fromBlock, ERC20Meta coinMeta, Address fromAddress, Address toAddress) throws Exception {
         Result rc = new Result();
-        List<ERC20TransferEvent> events = new ArrayList<>();
+        List<tech.yobit.web3.types.ERC20TransferEvent> events = new ArrayList<>();
         EthFilter filter = createEventFilter(fromBlock, coinMeta.contractAddress);
 
         if (fromAddress != null && toAddress != null) {
@@ -96,26 +97,30 @@ public class ERC20TransferEventImpl {
 
             String value = log.getData().substring(2); // strip `0x` prefix
             Coin coin = new Coin(new BigInteger(value, 16), coinMeta);
-            ERC20TransferEvent val = new ERC20TransferEvent(
+            tech.yobit.web3.types.ERC20TransferEvent val = new tech.yobit.web3.types.ERC20TransferEvent(
                     log.getBlockNumber(), log.getTransactionHash(), from, to, coin
             );
 
             events.add(val);
         }
 
-        rc.events = events.toArray(new ERC20TransferEvent[0]);
+        rc.events = events.toArray(new tech.yobit.web3.types.ERC20TransferEvent[0]);
         return rc;
+    }
+
+    public Result getCompletedTransferEvents(BigInteger fromBlock) throws Exception {
+        return getCompletedTransferEvents(mBlockchain.rpcUrl, fromBlock, mCoinMeta, mFrom, mTo);
     }
 
     static public class Result {
         public BigInteger blockNumber;
-        public ERC20TransferEvent[] events = new ERC20TransferEvent[0];
+        public tech.yobit.web3.types.ERC20TransferEvent[] events = new tech.yobit.web3.types.ERC20TransferEvent[0];
 
         public String toString() {
             StringBuilder builder = new StringBuilder();
 
             builder.append("blockNumber: ").append(blockNumber.toString());
-            for (ERC20TransferEvent event : events) {
+            for (tech.yobit.web3.types.ERC20TransferEvent event : events) {
                 builder.append("\n\\-").append(event.toString());
             }
 

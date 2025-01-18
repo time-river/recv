@@ -1,19 +1,11 @@
 package tech.yobit.web3.utils;
 
 import org.jetbrains.annotations.NotNull;
-import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.generated.Bytes32;
-import org.web3j.utils.Numeric;
-import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.web3.config.*;
-
-import java.util.Arrays;
-import java.util.Collections;
+import tech.yobit.web3.types.InfuraGasTrackerConfig;
 
 public class SetupTest {
+    public static final String SEPOLIA_WALLET_ADDRESS = System.getenv("SEPOLIA_WALLET_ADDRESS");
 
     @NotNull
     public static Configuration buildConfig() {
@@ -51,6 +43,7 @@ public class SetupTest {
 
         polygonUSDC.blockchains = new CoinConfig.Blockchain[]{usdcBlockchain};
 
+        // [0] - sepoliaUSDT
         return new CoinConfig[]{sepoliaUSDT};
     }
 
@@ -82,16 +75,12 @@ public class SetupTest {
         okxGasTrackerConfig.secretKey = System.getenv("OKX_SECRET_KEY");
         okxGasTrackerConfig.passphrase = System.getenv("OKX_PASSPHRASE");
 
-        /**
-         * EVM network:
-         * - Ethereum Mainnet: 1
-         * - BNB Smart Chain Mainnet: 56
-         * - Polygon Mainnet: 137
-         * - Sepolia: 11_155_111
-         */
-        okxGasTrackerConfig.blockchainIds = new String[] { "1", "56", "137", "11155111" };
+        InfuraGasTrackerConfig infuraGasTrackerConfig = new InfuraGasTrackerConfig();
+        infuraGasTrackerConfig.provider = "InfuraGasTrackerProvider";
+        infuraGasTrackerConfig.apiKey = System.getenv("INFURA_API_KEY");
+        infuraGasTrackerConfig.apiKeySecret = System.getenv("INFURA_API_KEY_SECRET");
 
-        return new GasTrackerConfig[]{okxGasTrackerConfig};
+        return new GasTrackerConfig[]{okxGasTrackerConfig, infuraGasTrackerConfig};
     }
 
 }

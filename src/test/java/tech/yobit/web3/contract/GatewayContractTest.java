@@ -37,22 +37,30 @@ public class GatewayContractTest {
     }
 
     @Test
-    public void testPredict() {
+    public void testPredictThenCheckAndCreateWalletAddress() {
         GatewayContract contract = manager.findGatewayContract(11_155_111);
         Assertions.assertNotNull(contract);
 
+        // predict
         UUID uuid = UUID.randomUUID();
         ContractAddress address = contract.predictWalletAddress(uuid.toString());
         logger.info("predict address: {}", address);
         try {
+            // 1st check
             boolean exist = contract.checkWalletAddress(address);
             Assertions.assertFalse(exist);
 
+            // create
             ContractAddress walletAddress = contract.createWallet(uuid.toString());
             logger.info("create address: {}", address);
             Assertions.assertEquals(address, walletAddress);
+
+            // 2nd check
+            exist = contract.checkWalletAddress(address);
+            Assertions.assertTrue(exist);
         } catch (Exception e) {
             Assertions.fail(e);
         }
     }
+
 }

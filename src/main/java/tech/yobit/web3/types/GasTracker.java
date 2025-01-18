@@ -16,11 +16,16 @@ public class GasTracker {
     public BigInteger suggestBaseFee;
 
     public GasTracker() {
+    }
+
+    public GasTracker(BlockchainName blockchain) {
         this.normalGasPrice = DefaultGasProvider.GAS_PRICE;
         this.minGasPrice = DefaultGasProvider.GAS_PRICE;
         this.maxGasPrice = DefaultGasProvider.GAS_PRICE;
 
-        this.supportEIP1559 = false;
+        // TODO: select suitable price
+        this.supportEIP1559 = blockchain.isSupportedEIP1559();
+
         this.safePriorityFee = new BigInteger("0");
         this.proposePriorityFee = new BigInteger("0");
         this.fastPriorityFee = new BigInteger("0");
@@ -36,22 +41,5 @@ public class GasTracker {
                 + ", proposePriorityFee=" + this.proposePriorityFee
                 + ", fastPriorityFee=" + this.fastPriorityFee
                 + ", suggestBaseFee=" + this.suggestBaseFee;
-    }
-
-    public static GasTracker fromOKXGasTracker(OKXGasPriceResponse.DataItem data) {
-        GasTracker gasTracker = new GasTracker();
-
-        gasTracker.normalGasPrice = data.normal;
-        gasTracker.minGasPrice = data.min;
-        gasTracker.maxGasPrice = data.max;
-        gasTracker.supportEIP1559 = data.supportEip1559;
-        if (gasTracker.supportEIP1559) {
-            gasTracker.safePriorityFee = data.eip1559Protocol.safePriorityFee;
-            gasTracker.proposePriorityFee = data.eip1559Protocol.proposePriorityFee;
-            gasTracker.fastPriorityFee = data.eip1559Protocol.fastPriorityFee;
-            gasTracker.suggestBaseFee = data.eip1559Protocol.suggestBaseFee;
-        }
-
-        return gasTracker;
     }
 }

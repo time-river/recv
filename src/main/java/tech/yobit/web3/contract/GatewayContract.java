@@ -1,13 +1,12 @@
 package tech.yobit.web3.contract;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeEncoder;
-import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.crypto.ContractUtils;
 import org.web3j.crypto.Credentials;
@@ -19,21 +18,19 @@ import org.web3j.utils.Numeric;
 import tech.yobit.generated.gateway.Gateway;
 import tech.yobit.generated.wallet.Wallet;
 import tech.yobit.web3.gas.GasProvider;
-import tech.yobit.web3.types.Address;
-import tech.yobit.web3.types.Blockchain;
-import tech.yobit.web3.types.ERC20Meta;
-import tech.yobit.web3.types.ContractAddress;
+import tech.yobit.web3.types.*;
 
+import java.math.BigInteger;
 import java.util.*;
 
 /**
- * 1. one gateway multiple wallet
- * 2. one user multiple wallet
- * 3. different wallet different user, or different blockchain
+ * 1. one blockchain one gateway
+ * 2. one gateway controls multiple user
+ * 3. one user multiple wallet, different wallet different blockchain
  * 4. all gateway is control by one private key
  */
 public class GatewayContract {
-    private static final Logger log = LoggerFactory.getLogger(GatewayContract.class);
+    private static final Logger logger = LoggerFactory.getLogger(GatewayContract.class);
 
     private final Blockchain mBlockchain;
     private final Credentials mCredentials;
@@ -47,7 +44,7 @@ public class GatewayContract {
     }
 
     @NotNull
-    private byte[] generateSalt(@NotNull String salt) {
+    static private byte[] generateSalt(@NotNull String salt) {
         byte[] bytes = salt.getBytes();
         return Hash.sha256(bytes);
     }
@@ -64,7 +61,7 @@ public class GatewayContract {
         byte[] address = ContractUtils.generateCreate2ContractAddress(
                 mBlockchain.gatewayAddress.toBytes(), salt, Numeric.hexStringToByteArray(initCode)
         );
-        return new ContractAddress(mBlockchain.id, address);
+        return new ContractAddress(mBlockchain.getId(), address);
     }
 
     @NotNull
@@ -78,63 +75,75 @@ public class GatewayContract {
         Gateway contract = Gateway.load(
                 mBlockchain.gatewayAddress.toHex(),
                 web3j, mCredentials,
-                new GasProvider(mBlockchain.id)
+                new GasProvider(mBlockchain.getId())
         );
 
         return contract.wallets(address.toHex()).send();
     }
 
     @NotNull
-    private String buildCreateWalletTransactionData(@NotNull byte[] salt) {
+    static private String buildCreateWalletTransactionData(byte[] salt) {
         Function function = new Function(
                 Gateway.FUNC_CREATEWALLET,
-                Arrays.<Type>asList(new Bytes32(salt)),
-                Collections.<TypeReference<?>>emptyList()
+                List.of(new Bytes32(salt)),
+                Collections.emptyList()
         );
 
         return FunctionEncoder.encode(function);
     }
 
+    @Nullable
+    private BigInteger getEstimateGasLimit(BlockchainName blockchain, Address from, Address to, byte[] salt) {
+        BigInteger gasLimit = GasProvider.getEstimateGas(
+                blockchain,
+                from.toHex(),
+                to.toHex(),
+                buildCreateWalletTransactionData(salt)
+        );
+
+        return gasLimit.equals(BigInteger.ZERO) ? null : gasLimit;
+    }
+
     // salt is 32 bytes length
-    @NotNull
+    @Nullable
     private ContractAddress createWallet(@NotNull byte[] salt) throws Exception {
+        logger.info("createWallet in {}({}) network", mBlockchain.getName(), mBlockchain.getId());
+
         Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
+        BigInteger gasLimit = getEstimateGasLimit(mBlockchain.chain, Address.fromHex(mCredentials.getAddress()), mBlockchain.gatewayAddress, salt);
+        if (gasLimit == null) {
+            return null;
+        }
+
         Gateway contract = Gateway.load(
                 mBlockchain.gatewayAddress.toHex(),
                 web3j, mCredentials,
-                new GasProvider(
-                        mBlockchain.id,
-                        GasProvider.getEstimateGas(
-                                mBlockchain.id,
-                                Address.fromHex(mCredentials.getAddress()),
-                                mBlockchain.gatewayAddress,
-                                buildCreateWalletTransactionData(salt)
-                        ))
+                new GasProvider(mBlockchain.getId(), gasLimit)
         );
 
         TransactionReceipt tx = contract.createWallet(salt).send();
 
-        log.info("create wallet for {} in {}({}) network, txId {}, status {}, gas used {}",
-                Numeric.toHexString(salt), mBlockchain.name, mBlockchain.id,
+        logger.info("create wallet for {} in {}({}) network, txId {}, status {}, gas used {}",
+                Numeric.toHexString(salt), mBlockchain.getName(), mBlockchain.getId(),
                 tx.getTransactionHash(), tx.isStatusOK(), tx.getGasUsed()
         );
 
         if (!tx.isStatusOK()) {
-            log.warn("create wallet for {} failure, revert reason: {}",
+            logger.warn("create wallet for {} failure, revert reason: {}",
                     Numeric.toHexString(salt), tx.getRevertReason());
             return null;
         }
 
-        // the first log is the contract creating log generated by blockchain contract creating event
+        // the first logger is the contract creating logger generated by blockchain contract creating event
         String address = tx.getLogs().getFirst().getAddress();
-        log.info("deploy wallet contract {} for {} in {}({}) network",
+        logger.info("deploy wallet contract {} for {} in {}({}) network",
                 address, Numeric.toHexString(salt),
-                mBlockchain.name, mBlockchain.id
+                mBlockchain.getName(), mBlockchain.getId()
         );
-        return new ContractAddress(mBlockchain.id, address);
+        return new ContractAddress(mBlockchain.getId(), address);
     }
 
-    @NotNull
+    @Nullable
     public ContractAddress createWallet(@NotNull String uid) throws Exception {
         byte[] salt = generateSalt(uid);
 
@@ -167,7 +176,7 @@ public class GatewayContract {
         if (generate != null && generate.equals(predicted)) {
             return predicted;
         } else if (generate != null) {
-            log.error("predict address {} don't match generated {}",
+            logger.error("predict address {} don't match generated {}",
                     predicted.toHex(), generate.toHex()
             );
         }

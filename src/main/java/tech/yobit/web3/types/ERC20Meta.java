@@ -1,6 +1,5 @@
 package tech.yobit.web3.types;
 
-import io.reactivex.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -68,12 +67,8 @@ public class ERC20Meta {
         return new BigInteger((negative ? "-" : "") + integer + fraction);
     }
 
-    public BigInteger parseUnits(String value) {
-        return parseUnits(value, this.decimals);
-    }
-
     @NotNull
-    public static String formatUnits(BigInteger value, int decimals)  {
+    public static String formatUnits(BigInteger value, int decimals) {
         String display = value.toString();
 
         boolean negative = display.startsWith("-");
@@ -92,6 +87,10 @@ public class ERC20Meta {
         fraction = fraction.replaceAll("0+$", "");
 
         return (negative ? "-" : "") + integer + (fraction.isEmpty() ? "" : "." + fraction);
+    }
+
+    public BigInteger parseUnits(String value) {
+        return parseUnits(value, this.decimals);
     }
 
     @NotNull

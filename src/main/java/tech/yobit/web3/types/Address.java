@@ -1,10 +1,8 @@
 package tech.yobit.web3.types;
 
-import org.web3j.abi.datatypes.Uint;
 import org.web3j.utils.Numeric;
 import tech.yobit.web3.utils.Base58;
 
-// TODO: support base58, non-160 bit address
 public class Address extends org.web3j.abi.datatypes.Address {
 
     private Address(int bitSize, byte[] bytesValue) {
@@ -62,10 +60,5 @@ public class Address extends org.web3j.abi.datatypes.Address {
 
     public String toBase58() {
         return Base58.encode(toBytes());
-    }
-
-    public String toFullHexWithPrefix() {
-        Uint unit = toUint();
-        return Numeric.toHexStringWithPrefixZeroPadded(unit.getValue(), unit.getBitSize());
     }
 }

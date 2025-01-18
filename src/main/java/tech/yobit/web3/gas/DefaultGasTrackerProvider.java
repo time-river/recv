@@ -2,27 +2,33 @@ package tech.yobit.web3.gas;
 
 import org.jetbrains.annotations.NotNull;
 import org.web3j.tx.gas.DefaultGasProvider;
-import tech.yobit.web3.types.Address;
+import tech.yobit.web3.types.BlockchainName;
 import tech.yobit.web3.types.GasTracker;
 
 import java.math.BigInteger;
 
 public class DefaultGasTrackerProvider implements GasTrackerProvider {
 
+    @NotNull
     @Override
-    public boolean isSupported(long blockchainId) {
-        return false;
+    public String getName() {
+        return DefaultGasProvider.class.getName();
+    }
+
+    @Override
+    public boolean isSupported(BlockchainName blockchain) {
+        return true;
     }
 
     @NotNull
     @Override
-    public GasTracker getGasTracker(long blockchainId)  {
-        return new GasTracker();
+    public GasTracker getGasTracker(BlockchainName blockchain) {
+        return new GasTracker(blockchain);
     }
 
     @NotNull
     @Override
-    public BigInteger estimateGas(long blockchainId, @NotNull Address from, @NotNull Address to, @NotNull String data) {
+    public BigInteger estimateGas(BlockchainName blockchain, @NotNull String from, @NotNull String to, @NotNull String data) {
         return DefaultGasProvider.GAS_LIMIT;
     }
 }
