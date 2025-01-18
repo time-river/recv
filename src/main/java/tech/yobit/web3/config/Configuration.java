@@ -22,7 +22,6 @@ public class Configuration {
     public String firstMinimumDepositAmount;
     public String minimumWithdrawalAmount;
     public String privateKey;
-    public String defaultRpcUrl;
     public CoinConfig[] coins;
     public BlockchainConfig[] blockchains;
     public GasTrackerConfig[] gasTrackers;
@@ -31,16 +30,11 @@ public class Configuration {
         Map<Long, Blockchain> blockchains = new HashMap<>();
 
         for (BlockchainConfig chain : this.blockchains) {
-            String rpcUrl = this.defaultRpcUrl;
-
-            if (chain.rpcUrl != null && !chain.rpcUrl.isEmpty()) {
-                rpcUrl = chain.rpcUrl;
-            }
 
             BlockchainName blockchain = BlockchainName.from(chain.id);
             if (chain.name == null || chain.name.isEmpty()) {
                 logger.warn("blockchain {} name is empty", chain.id);
-            } else if (rpcUrl == null || rpcUrl.isEmpty()) {
+            } else if (chain.rpcUrl == null || chain.rpcUrl.isEmpty()) {
                 throw new RuntimeException("blockchain " + chain.name + " RPC URL is empty");
             } else if (chain.blockExplorerUrl == null || chain.blockExplorerUrl.isEmpty()) {
                 throw new RuntimeException("blockchain " + chain.name + " block explorer URL is empty");
@@ -49,7 +43,7 @@ public class Configuration {
             }
 
             Blockchain obj = new Blockchain(
-                    blockchain, rpcUrl, chain.blockExplorerUrl, Address.fromString(chain.gatewayAddress)
+                    blockchain, chain.rpcUrl, chain.blockExplorerUrl, Address.fromString(chain.gatewayAddress)
             );
 
             blockchains.put(chain.id, obj);

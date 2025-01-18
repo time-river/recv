@@ -11,7 +11,6 @@ public class SetupTest {
     public static Configuration buildConfig() {
         Configuration config = new Configuration();
         config.privateKey = System.getenv("PRIVATE_KEY");
-        config.defaultRpcUrl = System.getenv("DEFAULT_RPCURL");
         config.coins = setupCoinConfig();
         config.blockchains = setupBlockchainConfig();
         config.gasTrackers = setupGasTrackerConfig();
