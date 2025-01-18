@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.yobit.web3.config.Configuration;
 import tech.yobit.web3.gas.GasProvider;
+import tech.yobit.web3.types.BlockchainName;
 import tech.yobit.web3.types.ContractAddress;
 import tech.yobit.web3.utils.SetupTest;
 
+import java.math.BigInteger;
 import java.util.UUID;
 
 public class GatewayContractTest {
@@ -63,4 +65,16 @@ public class GatewayContractTest {
         }
     }
 
+    @Test
+    public void testGetLatestBlockNumber() {
+        GatewayContract contract = manager.findGatewayContract(BlockchainName.SEPOLIA.getId());
+        Assertions.assertNotNull(contract);
+
+        try {
+            BigInteger blockNumber = contract.getLatestBlockchain();
+            logger.info("block number: {}", blockNumber);
+        } catch (Exception e) {
+            Assertions.fail(e);
+        }
+    }
 }

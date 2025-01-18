@@ -12,6 +12,7 @@ import org.web3j.crypto.ContractUtils;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Hash;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
@@ -193,5 +194,13 @@ public class GatewayContract {
             mWalletContracts.put(new Address(address), contract);
             return contract;
         }
+    }
+
+    public BigInteger getLatestBlockchain() throws Exception{
+        Web3j web3j = Web3j.build(new HttpService(mBlockchain.rpcUrl));
+        return web3j.ethGetBlockByNumber(DefaultBlockParameterName.FINALIZED, false)
+                .send()
+                .getBlock()
+                .getNumber();
     }
 }

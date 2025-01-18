@@ -8,6 +8,7 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.request.EthFilter;
@@ -77,13 +78,16 @@ public class ERC20TransferEvent {
 
         Web3j web3j = Web3j.build(new HttpService(url));
 
-        rc.blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
-        List<EthLog.LogResult> logs = web3j.ethGetLogs(filter).send().getLogs();
-        if (logs == null || logs.isEmpty()) {
+        rc.blockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.FINALIZED, false)
+                .send()
+                .getBlock()
+                .getNumber();
+        List<EthLog.LogResult> logResults = web3j.ethGetLogs(filter).send().getLogs();
+        if (logResults == null || logResults.isEmpty()) {
             return rc;
         }
 
-        for (EthLog.LogResult logResult : logs) {
+        for (EthLog.LogResult logResult : logResults) {
             if (!(logResult instanceof EthLog.LogObject)) {
                 logger.warn("Unexpected result type: {}, required LogObject", logResult.get());
                 break;
@@ -100,6 +104,10 @@ public class ERC20TransferEvent {
             tech.yobit.web3.types.ERC20TransferEvent val = new tech.yobit.web3.types.ERC20TransferEvent(
                     log.getBlockNumber(), log.getTransactionHash(), from, to, coin
             );
+
+            if (rc.blockNumber.compareTo(log.getBlockNumber()) < 0) {
+                rc.blockNumber = log.getBlockNumber();
+            }
 
             events.add(val);
         }
