@@ -72,7 +72,7 @@ public class GatewayContractTest {
         Assertions.assertNotNull(contract);
 
         try {
-            BigInteger blockNumber = contract.getLatestBlockchain();
+            BigInteger blockNumber = contract.getLatestBlockNumber();
             logger.info("block number: {}", blockNumber);
         } catch (Exception e) {
             Assertions.fail(e);
